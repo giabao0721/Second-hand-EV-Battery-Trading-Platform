@@ -2,10 +2,12 @@ package com.evdealer.evdealermanagement.service.implement;
 
 import com.evdealer.evdealermanagement.dto.transactions.*;
 import com.evdealer.evdealermanagement.entity.account.Account;
+import com.evdealer.evdealermanagement.entity.notify.Notification;
 import com.evdealer.evdealermanagement.entity.product.Product;
 import com.evdealer.evdealermanagement.entity.transactions.PurchaseRequest;
 import com.evdealer.evdealermanagement.repository.ProductRepository;
 import com.evdealer.evdealermanagement.repository.PurchaseRequestRepository;
+import com.evdealer.evdealermanagement.utils.CurrencyFormatter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -15,9 +17,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.math.BigDecimal;
+import java.text.NumberFormat;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
+
+import static org.thymeleaf.util.NumberUtils.formatCurrency;
 
 @Service
 @RequiredArgsConstructor
@@ -29,6 +36,7 @@ public class PurchaseRequestService {
     private final UserContextService userContextService;
     private final EversignService eversignService;
     private final EmailService emailService;
+    private final NotificationService notificationService;
 
     // -----------------------------
     // 1️⃣ Buyer gửi yêu cầu mua
@@ -88,6 +96,22 @@ public class PurchaseRequestService {
             );
         } catch (Exception e) {
             log.warn("Failed to send purchase request email: {}", e.getMessage());
+        }
+
+        //Notification cho seller
+        try {
+            notificationService.createAndPush(
+                    request.getSeller().getId(),
+                    "Yêu cầu mua hàng",
+                    String.format("%s muốn mua \"%s\" với giá %s VND.",
+                            buyer.getFullName(),
+                            product.getTitle(),
+                            CurrencyFormatter.format(request.getOfferedPrice())),
+                    Notification.NotificationType.PURCHASE_REQUEST,
+                    saved.getId()
+            );
+        } catch (Exception e) {
+            log.warn("Failed to create notification: {}", e.getMessage());
         }
 
         return mapToResponse(saved);
@@ -192,6 +216,22 @@ public class PurchaseRequestService {
                 PurchaseRequest saved = purchaseRequestRepository.save(request);
                 eversignService.createAndSaveContractDocument(saved);
                 sendContractEmails(saved, contractInfo);
+
+                //THÊM: Notification cho buyer
+                try {
+                    notificationService.createAndPush(
+                            request.getBuyer().getId(),
+                            "Yêu cầu mua đã được chấp nhận",
+                            String.format("%s đã chấp nhận yêu cầu cho %s. Vui lòng ký hợp đồng điện tử.",
+                                    request.getSeller().getFullName(),
+                                    request.getProduct().getTitle()),
+                            Notification.NotificationType.PURCHASE_REQUEST_ACCEPTED,
+                            request.getId()
+                    );
+                } catch (Exception e) {
+                    log.warn("Failed to create notification: {}", e.getMessage());
+                }
+
                 return mapToResponse(saved);
             } else {
                 throw new IllegalStateException("Eversign API returned missing contract info");
@@ -243,6 +283,24 @@ public class PurchaseRequestService {
             );
         } catch (Exception e) {
             log.warn("Failed to send rejection email: {}", e.getMessage());
+        }
+
+        //Notification cho buyer
+        try {
+            String reason = (rejectReason == null || rejectReason.isBlank())
+                    ? "Không có lý do cụ thể" : rejectReason;
+            notificationService.createAndPush(
+                    request.getBuyer().getId(),
+                    "Yêu cầu mua bị từ chối",
+                    String.format("%s đã từ chối yêu cầu cho %s. Lý do: %s",
+                            request.getSeller().getFullName(),
+                            request.getProduct().getTitle(),
+                            reason),
+                    Notification.NotificationType.PURCHASE_REQUEST_REJECTED,
+                    request.getId()
+            );
+        } catch (Exception e) {
+            log.warn("Failed to create notification: {}", e.getMessage());
         }
 
         return mapToResponse(saved);

@@ -1,9 +1,8 @@
 package com.evdealer.evdealermanagement.service.implement;
 
-import com.sendgrid.*;
+import com.evdealer.evdealermanagement.utils.CurrencyFormatter;
 import com.sendgrid.helpers.mail.objects.Email;
 import jakarta.annotation.PostConstruct;
-import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -86,7 +85,7 @@ public class EmailService {
         Context context = new Context();
         context.setVariable("buyerName", buyerName);
         context.setVariable("productTitle", productTitle);
-        context.setVariable("offeredPrice", formatCurrency(offeredPrice));
+        context.setVariable("offeredPrice", CurrencyFormatter.format(offeredPrice));
         context.setVariable("acceptUrl", acceptUrl);
         context.setVariable("rejectUrl", rejectUrl);
         context.setVariable("viewRequestUrl", viewRequestUrl); // <-- thêm dòng này
@@ -182,12 +181,6 @@ public class EmailService {
     // ==============================================
     @Async
     public void sendProductExpireSoon(String to, String productTitle, LocalDateTime expiresAt) {
-        try {
-            MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-
-            helper.setTo(to);
-            helper.setSubject("Nhắc nhở: Sản phẩm sắp hết hạn");
 
             Context context = new Context();
             context.setVariable("productTitle", productTitle);
@@ -200,13 +193,8 @@ public class EmailService {
             context.setVariable("daysLeft", daysLeft);
 
             String htmlContent = templateEngine.process("email/product-expire-soon", context);
-            helper.setText(htmlContent, true);
-
-            mailSender.send(message);
+            sendEmail(to, "Nhắc nhở: Sản phẩm sắp hết hạn", htmlContent);
             log.info("📩 Product expire reminder sent to {}", to);
-        } catch (MessagingException e) {
-            log.error("❌ Failed to send product expiry email: {}", e.getMessage());
-        }
     }
 
     // ==============================================
@@ -277,26 +265,4 @@ public class EmailService {
         }
     }
 
-    // ==============================================
-    // HELPER: FORMAT VND
-    // ==============================================
-    private String formatCurrency(Object amount) {
-        if (amount == null) return "0 VND";
-        BigDecimal value;
-        if (amount instanceof Number) {
-            value = new BigDecimal(((Number) amount).doubleValue());
-        } else if (amount instanceof String) {
-            try {
-                value = new BigDecimal((String) amount);
-            } catch (NumberFormatException e) {
-                return "0 VND";
-            }
-        } else {
-            return "0 VND";
-        }
-
-        NumberFormat nf = NumberFormat.getInstance(new Locale("vi", "VN"));
-        nf.setMaximumFractionDigits(0);
-        return nf.format(value) + " VND";
-    }
 }
