@@ -7,6 +7,7 @@ import com.evdealer.evdealermanagement.entity.product.Product;
 import com.evdealer.evdealermanagement.entity.transactions.PurchaseRequest;
 import com.evdealer.evdealermanagement.repository.ProductRepository;
 import com.evdealer.evdealermanagement.repository.PurchaseRequestRepository;
+import com.evdealer.evdealermanagement.utils.CurrencyFormatter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -16,9 +17,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.math.BigDecimal;
+import java.text.NumberFormat;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
+
+import static org.thymeleaf.util.NumberUtils.formatCurrency;
 
 @Service
 @RequiredArgsConstructor
@@ -90,6 +96,22 @@ public class PurchaseRequestService {
             );
         } catch (Exception e) {
             log.warn("Failed to send purchase request email: {}", e.getMessage());
+        }
+
+        //Notification cho seller
+        try {
+            notificationService.createAndPush(
+                    request.getSeller().getId(),
+                    "Yêu cầu mua hàng",
+                    String.format("%s muốn mua \"%s\" với giá %s VND.",
+                            buyer.getFullName(),
+                            product.getTitle(),
+                            CurrencyFormatter.format(request.getOfferedPrice())),
+                    Notification.NotificationType.PURCHASE_REQUEST,
+                    saved.getId()
+            );
+        } catch (Exception e) {
+            log.warn("Failed to create notification: {}", e.getMessage());
         }
 
         return mapToResponse(saved);
