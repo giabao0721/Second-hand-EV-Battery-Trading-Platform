@@ -57,6 +57,7 @@ public class Notification extends BaseEntity {
         PRODUCT_SOLD,
         PAYMENT_SUCCESS,
         SYSTEM_ANNOUNCEMENT,
+        PURCHASE_REQUEST,
         PURCHASE_REQUEST_ACCEPTED,     // Seller chấp nhận → notify Buyer
         PURCHASE_REQUEST_REJECTED,     // Seller từ chối → notify Buyer
         PURCHASE_REQUEST_COMPLETED,    // Hai bên ký xong → notify 2 bên
