@@ -69,6 +69,8 @@ public class PurchaseRequestService {
         );
 
         if (alreadyRequest) {
+            log.warn("Duplicate purchase request detected for buyer={} and product={}",
+                    buyer.getId(), product.getId());
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "Bạn đã gửi yêu cầu mua sản phẩm này rồi. Vui lòng chờ người bán phản hồi.");
         }
