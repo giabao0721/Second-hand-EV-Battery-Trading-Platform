@@ -320,8 +320,13 @@ public class StaffService {
     }
 
     @Transactional(readOnly = true)
+    public Page<TransactionsHistory> getAllTransactionHistory(Pageable pageable) {
+        Page<ContractDocument> docs = contractDocumentRepository.findAll(pageable);
+        return docs.map(this::mapToHistoryDTO);
+    }
+
     public ApprovalRateResponse getApprovalRateByDate(LocalDate date) {
-        if(date == null) {
+        if (date == null) {
             throw new AppException(ErrorCode.DATE_MUST_REQUIRED);
         }
 
@@ -329,7 +334,8 @@ public class StaffService {
         LocalDateTime endOfDay = date.atTime(LocalTime.MAX).atZone(VIETNAM_ZONE).toLocalDateTime();
 
         long approved = productRepository.countByStatusAndUpdatedAtBetween(Product.Status.ACTIVE, startOfDay, endOfDay);
-        long rejected = productRepository.countByStatusAndUpdatedAtBetween(Product.Status.REJECTED, startOfDay, endOfDay);
+        long rejected = productRepository.countByStatusAndUpdatedAtBetween(Product.Status.REJECTED, startOfDay,
+                endOfDay);
 
         long decided = approved + rejected;
 

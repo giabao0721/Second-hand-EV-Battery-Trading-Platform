@@ -8,6 +8,9 @@ import com.evdealer.evdealermanagement.entity.product.Product;
 import com.evdealer.evdealermanagement.repository.PostPaymentRepository;
 import com.evdealer.evdealermanagement.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,25 +24,32 @@ public class TransactionService {
     private final ProductRepository productRepository;
 
     @Transactional(readOnly = true)
-    public List<TransactionResponse> getAllTransactions() {
-        List<PostPayment> payments = postPaymentRepository.findAllByOrderByCreatedAtDesc();
+    public Page<TransactionResponse> getAllTransactions(Pageable pageable) {
+        Page<PostPayment> payments = postPaymentRepository.findAllByOrderByCreatedAtDesc(pageable);
+        // Có thể dùng findAll(pageable) nếu đã sort trong pageable
 
-        return payments.stream().map(p -> {
-            Product product = productRepository.findById(p.getProduct().getId()).orElse(null);
+        return payments.map(p -> {
+            Product product = p.getProduct();
             PostPackage postPackage = p.getPostPackage();
             PostPackageOption postPackageOption = p.getPostPackageOption();
+
+            Integer durationDays = null;
+            if (postPackageOption != null && postPackageOption.getDurationDays() != null) {
+                durationDays = postPackageOption.getDurationDays();
+            } else if (postPackage != null) {
+                durationDays = postPackage.getDurationDays();
+            }
+
             return TransactionResponse.builder()
                     .paymentId(p.getId())
                     .createdAt(p.getCreatedAt())
                     .amount(p.getAmount())
-                    .paymentMethod(p.getPaymentMethod().name())
+                    .paymentMethod(p.getPaymentMethod() != null ? p.getPaymentMethod().name() : null)
                     .packageName(postPackage != null ? postPackage.getName() : null)
-                    .durationDays(postPackageOption != null && postPackageOption.getDurationDays() != null
-                            ? postPackageOption.getDurationDays()
-                            : (postPackage != null ? postPackage.getDurationDays() : null))
-                    .productId(p.getProduct().getId())
+                    .durationDays(durationDays)
+                    .productId(p.getProduct() != null ? p.getProduct().getId() : null)
                     .productName(product != null ? product.getTitle() : null)
                     .build();
-        }).toList();
+        });
     }
 }
