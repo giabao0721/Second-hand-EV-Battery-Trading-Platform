@@ -28,7 +28,7 @@ public class StaffPostManagementController {
         return ResponseEntity.ok(staffService.getApprovalRate());
     }
 
-    @GetMapping("/approval-rate")
+    @GetMapping("/approval-rate/date")
     @PreAuthorize("hasAnyRole('STAFF', 'ADMIN')")
     public ResponseEntity<ApprovalRateResponse> getApprovalRateByDate(@RequestParam
                                                                       @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)LocalDate date) {
