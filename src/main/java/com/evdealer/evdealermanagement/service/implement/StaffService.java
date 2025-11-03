@@ -320,14 +320,9 @@ public class StaffService {
     }
 
     @Transactional(readOnly = true)
-    public List<TransactionsHistory> getAllTransactionHistory() {
-        // Lấy tất cả ContractDocument
-        List<ContractDocument> contractDocumentList = contractDocumentRepository.findAll();
-
-        // Chuyển đổi (map) từ List<ContractDocument> sang List<TransactionsHistory>
-        return contractDocumentList.stream()
-                .map(this::mapToHistoryDTO) // Gọi hàm helper để chuyển đổi
-                .collect(Collectors.toList());
+    public Page<TransactionsHistory> getAllTransactionHistory(Pageable pageable) {
+        Page<ContractDocument> docs = contractDocumentRepository.findAll(pageable);
+        return docs.map(this::mapToHistoryDTO);
     }
 
     private TransactionsHistory mapToHistoryDTO(ContractDocument contractDocument) {
