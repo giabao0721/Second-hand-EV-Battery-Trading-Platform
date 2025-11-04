@@ -3,6 +3,7 @@ package com.evdealer.evdealermanagement.repository;
 import com.evdealer.evdealermanagement.entity.transactions.PurchaseRequest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -49,4 +50,14 @@ public interface PurchaseRequestRepository extends JpaRepository<PurchaseRequest
             String productId,
             java.util.List<PurchaseRequest.RequestStatus> statuses
     );
+
+    @EntityGraph(attributePaths = {"product"})
+    @Query("""
+        SELECT pr
+        FROM PurchaseRequest pr
+        WHERE pr.status = 'COMPLETED'
+          AND (pr.buyer.id = :accountId OR pr.seller.id = :accountId)
+        ORDER BY pr.completedAt DESC
+    """)
+    Page<PurchaseRequest> findCompletedTransactionsByAccountId(String accountId, Pageable pageable);
 }
