@@ -25,27 +25,31 @@ public class EversignWebhookController {
      * Webhook cho document completed (all signers signed)
      */
     @PostMapping("/document-complete")
-    public ResponseEntity<?> handleDocumentComplete(@RequestBody(required = false) Map<String, Object> payload) {
-        // Thêm (required = false) để tránh lỗi khi truy cập thủ công
+    public ResponseEntity<?> handleDocumentComplete(
+            @RequestBody(required = false) Map<String, Object> payload,
+            @RequestHeader Map<String, String> headers
+    ) {
+        log.info("================== WEBHOOK RECEIVED ==================");
+        log.info("📥 Headers: {}", headers);
+        log.info("📦 Payload: {}", payload);
+        log.info("=====================================================");
+
+        if (payload == null || !payload.containsKey("document_hash")) {
+            log.error("❌ Webhook nhận được body rỗng hoặc thiếu 'document_hash'");
+            return ResponseEntity.ok(Map.of("success", true, "message", "Test webhook received"));
+        }
+
+        String documentHash = (String) payload.get("document_hash");
+        log.info("🎯 Processing document_hash: {}", documentHash);
+
         try {
-            // Kiểm tra payload và document_hash để xử lý lỗi 500
-            if (payload == null || !payload.containsKey("document_hash")) {
-                log.error("❌ Webhook nhận được body rỗng hoặc thiếu 'document_hash'");
-                return ResponseEntity.badRequest().body(Map.of("success", false, "error", "Invalid payload"));
-            }
-
-            log.info("🎉 Webhook Document Completed được nhận: {}", payload);
-            String documentHash = (String) payload.get("document_hash");
-
-            // Giao toàn bộ việc xử lý cho Service trong một transaction duy nhất
             eversignService.processDocumentCompletion(documentHash);
-
+            log.info("✅ Webhook processed successfully for: {}", documentHash);
             return ResponseEntity.ok(Map.of("success", true));
-
         } catch (Exception e) {
-            log.error("❌ Lỗi nghiêm trọng khi xử lý webhook: {}", e.getMessage(), e);
-            // Trả về lỗi 500 nếu có bất kỳ lỗi nào xảy ra trong service
-            return ResponseEntity.internalServerError().body(Map.of("success", false, "error", e.getMessage()));
+            log.error("❌ Lỗi khi xử lý webhook cho {}: {}", documentHash, e.getMessage(), e);
+            return ResponseEntity.internalServerError()
+                    .body(Map.of("success", false, "error", e.getMessage()));
         }
     }
 }
