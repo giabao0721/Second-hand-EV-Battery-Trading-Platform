@@ -177,7 +177,10 @@ public class EversignService {
     }
 
     private String buildContractViewUrl(String documentHash) {
-        return String.format("https://eversign.com/documents/%s", documentHash);
+        return String.format(
+                "%s/document?business_id=%s&document_hash=%s&access_key=%s",
+                EVERSIGN_API_BASE, businessId, documentHash, apiKey
+        );
     }
 
     // ✅ CHỈ CẦN DUY NHẤT PHƯƠNG THỨC NÀY ĐỂ LÀM VIỆC LƯU TRỮ
