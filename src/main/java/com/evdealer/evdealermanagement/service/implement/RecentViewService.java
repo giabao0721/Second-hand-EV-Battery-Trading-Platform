@@ -9,6 +9,9 @@ import com.evdealer.evdealermanagement.repository.RecentViewRepository;
 import com.evdealer.evdealermanagement.utils.VietNamDatetime;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -56,12 +59,28 @@ public class RecentViewService {
 
     @Transactional(readOnly = true)
     public List<ProductDetail> getRecentViewedProducts() {
-        Account user = userContextService.getCurrentUser().orElse(null);
+        Account user = userContextService.getCurrentUser()
+                .orElseThrow(() -> new IllegalStateException("User not authenticated"));
         return recentViewRepository.findProductsByUserId(user.getId())
                 .stream()
-                .distinct() // Remove duplicates caused by images join
+                .distinct()
                 .map(ProductDetail::fromEntity)
                 .toList();
     }
+
+    /**
+     * ✅ Hàm mới có phân trang
+     */
+    @Transactional(readOnly = true)
+    public Page<ProductDetail> getRecentViewedProductsPaged(int page, int size) {
+        Account user = userContextService.getCurrentUser()
+                .orElseThrow(() -> new IllegalStateException("User not authenticated"));
+
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Product> paged = recentViewRepository.findPagedProductsByUserId(user.getId(), pageable);
+        return paged.map(ProductDetail::fromEntity);
+    }
+
+
 
 }
