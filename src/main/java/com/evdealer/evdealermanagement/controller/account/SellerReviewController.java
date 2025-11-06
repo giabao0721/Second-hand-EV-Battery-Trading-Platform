@@ -5,6 +5,7 @@ import com.evdealer.evdealermanagement.dto.account.review.SellerReviewRequest;
 import com.evdealer.evdealermanagement.dto.account.review.SellerReviewResponse;
 import com.evdealer.evdealermanagement.dto.common.PageResponse;
 import com.evdealer.evdealermanagement.service.implement.SellerReviewService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -27,7 +28,7 @@ public class SellerReviewController {
     @PostMapping
     public ResponseEntity<SellerReviewResponse> create(
             @AuthenticationPrincipal CustomAccountDetails user,
-            @RequestBody SellerReviewRequest request
+           @Valid @RequestBody SellerReviewRequest request
     ) {
         String buyerId = user.getAccountId();
         return ResponseEntity.ok(sellerReviewService.createSellerReview(buyerId, request));
