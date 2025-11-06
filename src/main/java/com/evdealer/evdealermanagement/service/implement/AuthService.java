@@ -11,7 +11,6 @@ import com.evdealer.evdealermanagement.repository.AccountRepository;
 import com.evdealer.evdealermanagement.utils.Utils;
 import com.evdealer.evdealermanagement.utils.VietNamDatetime;
 import jakarta.servlet.http.HttpServletRequest;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -24,8 +23,8 @@ public class AuthService {
     private final RecaptchaService recaptchaService;
 
     public AuthService(JwtService jwtService,
-                       AccountRepository accountRepository,
-                       PasswordEncoder passwordEncoder, RecaptchaService recaptchaService) {
+            AccountRepository accountRepository,
+            PasswordEncoder passwordEncoder, RecaptchaService recaptchaService) {
         this.jwtService = jwtService;
         this.accountRepository = accountRepository;
         this.passwordEncoder = passwordEncoder;
@@ -33,9 +32,10 @@ public class AuthService {
     }
 
     // ======================= LOGIN =======================
-    public AccountLoginResponse login(String phone, String password, String gRecaptchaResponse, HttpServletRequest request) {
+    public AccountLoginResponse login(String phone, String password, String gRecaptchaResponse,
+            HttpServletRequest request) {
 
-        if(!recaptchaService.verifyRecaptcha(gRecaptchaResponse, request)) {
+        if (!recaptchaService.verifyRecaptcha(gRecaptchaResponse, request)) {
             throw new AppException(ErrorCode.INVALID_CAPTCHA);
         }
 
@@ -77,7 +77,7 @@ public class AuthService {
     public AccountRegisterResponse register(AccountRegisterRequest request) {
         String phone = request.getPhone().trim();
         String fullName = request.getFullName().trim();
-        //String email = request.getEmail().trim();
+        // String email = request.getEmail().trim();
 
         // Check duplicate phone
         if (accountRepository.findByPhone(phone).isPresent()) {

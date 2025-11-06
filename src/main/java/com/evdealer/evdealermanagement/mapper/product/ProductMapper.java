@@ -7,8 +7,6 @@ import com.evdealer.evdealermanagement.entity.battery.BatteryDetails;
 import com.evdealer.evdealermanagement.entity.product.Product;
 import com.evdealer.evdealermanagement.entity.product.ProductImages;
 import com.evdealer.evdealermanagement.entity.vehicle.VehicleDetails;
-import com.evdealer.evdealermanagement.repository.VehicleDetailsRepository;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.Hibernate;
 
@@ -23,7 +21,8 @@ public class ProductMapper {
 
     // Entity -> DTO
     public static ProductDetail toDetailDto(Product product) {
-        if (product == null) return null;
+        if (product == null)
+            return null;
 
         // Initialize images để tránh lazy loading exception
         Hibernate.initialize(product.getImages());
@@ -34,9 +33,8 @@ public class ProductMapper {
             imagesList = product.getImages().stream()
                     .sorted(Comparator.comparing(
                             ProductImages::getPosition,
-                            Comparator.nullsLast(Integer::compareTo)
-                    ))
-                    .map(ProductImageDto::fromEntity)  //  Convert sang DTO
+                            Comparator.nullsLast(Integer::compareTo)))
+                    .map(ProductImageDto::fromEntity) // Convert sang DTO
                     .collect(Collectors.toList());
         }
 
@@ -55,22 +53,21 @@ public class ProductMapper {
                 if (vehicleDetails.getBrand() != null && vehicleDetails.getBrand().getName() != null) {
                     brandName = vehicleDetails.getBrand().getName();
                 }
-                if(vehicleDetails.getModel() != null && vehicleDetails.getModel().getName() != null) {
+                if (vehicleDetails.getModel() != null && vehicleDetails.getModel().getName() != null) {
                     modelName = vehicleDetails.getModel().getName();
                 }
             }
-        } else if(product.getType() == Product.ProductType.BATTERY) {
+        } else if (product.getType() == Product.ProductType.BATTERY) {
             Hibernate.initialize(product.getBatteryDetails());
             BatteryDetails batteryDetails = product.getBatteryDetails();
 
-            if(batteryDetails != null && batteryDetails.getBrand() != null) {
+            if (batteryDetails != null && batteryDetails.getBrand() != null) {
                 brandName = batteryDetails.getBrand().getName();
 
-                if(batteryDetails.getBatteryType() != null) {
+                if (batteryDetails.getBatteryType() != null) {
                     batteryType = batteryDetails.getBatteryType().getName();
                 }
             }
-
 
         }
 
@@ -84,18 +81,18 @@ public class ProductMapper {
                 .status(product.getStatus() != null ? product.getStatus().name() : null)
                 .createdAt(product.getCreatedAt())
 
-                //  Seller info
+                // Seller info
                 .sellerId(product.getSeller() != null ? product.getSeller().getId() : null)
                 .sellerName(product.getSeller() != null ? product.getSeller().getFullName() : null)
                 .sellerPhone(product.getSeller() != null ? product.getSeller().getPhone() : null)
 
-                //  Address info
+                // Address info
                 .addressDetail(product.getAddressDetail())
                 .city(product.getCity())
                 .district(product.getDistrict())
                 .ward(product.getWard())
 
-                //  Product images - Sử dụng biến đã convert
+                // Product images - Sử dụng biến đã convert
                 .productImagesList(imagesList)
                 .brandName(brandName)
                 .modelName(modelName)
@@ -106,7 +103,8 @@ public class ProductMapper {
     }
 
     public static ProductImageResponse toMapDto(ProductImages productImages) {
-        if (productImages == null) return null;
+        if (productImages == null)
+            return null;
 
         return ProductImageResponse.builder()
                 .id(productImages.getId())
@@ -120,7 +118,8 @@ public class ProductMapper {
 
     // DTO -> Entity
     public static Product toEntity(ProductDetail dto) {
-        if (dto == null) return null;
+        if (dto == null)
+            return null;
 
         log.debug("Mapping ProductDetail to Product: {}", dto);
 

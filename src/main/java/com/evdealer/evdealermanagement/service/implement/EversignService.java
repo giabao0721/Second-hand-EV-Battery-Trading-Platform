@@ -1,7 +1,5 @@
 package com.evdealer.evdealermanagement.service.implement;
 
-import com.cloudinary.Cloudinary;
-import com.cloudinary.utils.ObjectUtils;
 import com.evdealer.evdealermanagement.dto.transactions.ContractInfoDTO;
 import com.evdealer.evdealermanagement.entity.account.Account;
 import com.evdealer.evdealermanagement.entity.notify.Notification;
@@ -24,10 +22,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
-import java.io.*;
-import java.net.URL;
-import java.nio.file.Files;
-import java.time.LocalDateTime;
 import java.util.*;
 
 @Service
@@ -78,8 +72,7 @@ public class EversignService {
     public ContractInfoDTO createBlankContractForManualInput(
             Account buyer,
             Account seller,
-            Product product
-    ) {
+            Product product) {
         try {
             log.info("🚀 [Eversign] Tạo hợp đồng trống (sandboxMode={})", sandboxMode);
 
@@ -143,15 +136,14 @@ public class EversignService {
     private Map<String, Object> buildContractRequest(
             Account buyer,
             Account seller,
-            Product product
-    ) {
+            Product product) {
         Map<String, Object> body = new HashMap<>();
         body.put("sandbox", sandboxMode ? 1 : 0); // ✅ bật sandbox
         body.put("business_id", businessId);
         body.put("template_id", templateId);
         body.put("title", "Hợp đồng mua bán sản phẩm - ECO GREEN");
         body.put("message", "Vui lòng điền thông tin và ký hợp đồng (sandbox).");
-//        body.put("embedded_signing_enabled", 1);
+        // body.put("embedded_signing_enabled", 1);
         body.put("use_signer_order", 1);
         body.put("webhook_url", appBaseUrl + "/api/webhooks/eversign/document-complete");
         log.info("📡 Webhook URL gửi lên Eversign: {}", appBaseUrl + "/api/webhooks/eversign/document-complete");
@@ -162,14 +154,12 @@ public class EversignService {
                 "role", "seller",
                 "name", seller.getFullName(),
                 "email", seller.getEmail(),
-                "signing_order", 1
-        ));
+                "signing_order", 1));
         signers.add(Map.of(
                 "role", "buyer",
                 "name", buyer.getFullName(),
                 "email", buyer.getEmail(),
-                "signing_order", 2
-        ));
+                "signing_order", 2));
         body.put("signers", signers);
 
         log.debug("🧰 [Eversign] Request body (sandbox={}): {}", sandboxMode, body);
@@ -179,8 +169,7 @@ public class EversignService {
     private String buildContractViewUrl(String documentHash) {
         return String.format(
                 "%s/document?business_id=%s&document_hash=%s&access_key=%s",
-                EVERSIGN_API_BASE, businessId, documentHash, apiKey
-        );
+                EVERSIGN_API_BASE, businessId, documentHash, apiKey);
     }
 
     // ✅ CHỈ CẦN DUY NHẤT PHƯƠNG THỨC NÀY ĐỂ LÀM VIỆC LƯU TRỮ
@@ -202,8 +191,7 @@ public class EversignService {
 
             String finalDocUrl = String.format(
                     "https://api.eversign.com/download_final_document?access_key=%s&business_id=%s&document_hash=%s&audit_trail=1",
-                    apiKey, businessId, documentHash
-            );
+                    apiKey, businessId, documentHash);
 
             ContractDocument contract = new ContractDocument();
             contract.setPurchaseRequest(request);
@@ -244,13 +232,15 @@ public class EversignService {
         request.setContractStatus(PurchaseRequest.ContractStatus.COMPLETED);
         request.setStatus(PurchaseRequest.RequestStatus.CONTRACT_SIGNED);
         // Có thể cập nhật thời gian ký ở đây nếu cần
-        if (request.getBuyerSignedAt() == null) request.setBuyerSignedAt(VietNamDatetime.nowVietNam());
-        if (request.getSellerSignedAt() == null) request.setSellerSignedAt(VietNamDatetime.nowVietNam());
+        if (request.getBuyerSignedAt() == null)
+            request.setBuyerSignedAt(VietNamDatetime.nowVietNam());
+        if (request.getSellerSignedAt() == null)
+            request.setSellerSignedAt(VietNamDatetime.nowVietNam());
 
         purchaseRequestRepository.save(request);
         log.info("✅ Cập nhật trạng thái hợp đồng thành COMPLETED cho request: {}", request.getId());
 
-        //Notification cho cả buyer và seller
+        // Notification cho cả buyer và seller
         String content = String.format("Giao dịch %s đã hoàn tất. Cảm ơn bạn!",
                 request.getProduct().getTitle());
 
@@ -260,15 +250,13 @@ public class EversignService {
                     "Giao dịch hoàn tất",
                     content,
                     Notification.NotificationType.PURCHASE_REQUEST_COMPLETED,
-                    request.getId()
-            );
+                    request.getId());
             notificationService.createAndPush(
                     request.getSeller().getId(),
                     "Giao dịch hoàn tất",
                     content,
                     Notification.NotificationType.PURCHASE_REQUEST_COMPLETED,
-                    request.getId()
-            );
+                    request.getId());
         } catch (Exception e) {
             log.warn("Failed to create notifications: {}", e.getMessage());
         }
@@ -297,8 +285,7 @@ public class EversignService {
             // ✅ Tạo URL tải trực tiếp từ Eversign
             String finalDocUrl = String.format(
                     "https://api.eversign.com/download_final_document?access_key=%s&business_id=%s&document_hash=%s&audit_trail=1",
-                    apiKey, businessId, documentHash
-            );
+                    apiKey, businessId, documentHash);
 
             // ✅ Lưu (hoặc cập nhật nếu đã tồn tại)
             ContractDocument contract = contractDocumentRepository.findByDocumentId(documentHash)
@@ -320,7 +307,6 @@ public class EversignService {
             throw new RuntimeException("Lỗi khi xử lý và lưu hợp đồng từ Eversign: " + e.getMessage());
         }
     }
-
 
     @Scheduled(fixedDelay = 60000) // 3 phút (cho nhanh hơn)
     @Transactional
@@ -348,8 +334,7 @@ public class EversignService {
                 // Gọi Eversign API để check status
                 String url = String.format(
                         "%s/document?business_id=%s&document_hash=%s&access_key=%s",
-                        EVERSIGN_API_BASE, businessId, documentHash, apiKey
-                );
+                        EVERSIGN_API_BASE, businessId, documentHash, apiKey);
 
                 log.debug("🔍 Checking document: {}", documentHash);
                 ResponseEntity<Map> response = restTemplate.getForEntity(url, Map.class);

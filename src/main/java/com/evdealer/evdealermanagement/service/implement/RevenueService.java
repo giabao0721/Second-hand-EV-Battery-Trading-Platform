@@ -7,7 +7,6 @@ import com.evdealer.evdealermanagement.repository.PostPaymentRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.util.comparator.Comparators;
 
 import java.math.BigDecimal;
 import java.util.Comparator;
@@ -37,9 +36,8 @@ public class RevenueService {
                     .filter(p -> p.getCreatedAt() != null)
                     .filter(p -> p.getCreatedAt().getMonthValue() == month)
                     .collect(Collectors.groupingBy(
-                            p-> p.getCreatedAt().getYear(),
-                            Collectors.reducing(BigDecimal.ZERO, PostPayment::getAmount, BigDecimal::add)
-                    ));
+                            p -> p.getCreatedAt().getYear(),
+                            Collectors.reducing(BigDecimal.ZERO, PostPayment::getAmount, BigDecimal::add)));
 
             List<MonthlyRevenue> revenueList = revenueByYear.entrySet().stream()
                     .map(entry -> new MonthlyRevenue(entry.getKey(), month, entry.getValue()))
@@ -49,8 +47,7 @@ public class RevenueService {
             log.debug("Revenue by year for month {}: {}", month, revenueList);
             return revenueList;
 
-        }
-        catch (NumberFormatException e) {
+        } catch (NumberFormatException e) {
             log.error("Invalid format: {}", monthStr, e);
             return List.of();
         } catch (Exception e) {
@@ -67,8 +64,7 @@ public class RevenueService {
                     .filter(p -> p.getCreatedAt() != null)
                     .collect(Collectors.groupingBy(
                             p -> p.getCreatedAt().getYear(),
-                            Collectors.reducing(BigDecimal.ZERO, PostPayment::getAmount, BigDecimal::add)
-                    ));
+                            Collectors.reducing(BigDecimal.ZERO, PostPayment::getAmount, BigDecimal::add)));
 
             List<YearlyRevenue> revenueList = revenueByYear.entrySet().stream()
                     .map(entry -> new YearlyRevenue(entry.getKey(), entry.getValue()))
@@ -98,16 +94,13 @@ public class RevenueService {
                     .filter(p -> p.getCreatedAt().getYear() == year)
                     .collect(Collectors.groupingBy(
                             p -> p.getCreatedAt().getMonthValue(),
-                            Collectors.reducing(BigDecimal.ZERO, PostPayment::getAmount, BigDecimal::add)
-                    ));
-            List<MonthlyRevenue> revenueList =
-                    java.util.stream.IntStream.rangeClosed(1, 12)
-                            .mapToObj(month -> new MonthlyRevenue(
-                                    year,
-                                    month,
-                                    revenueMonth.getOrDefault(month, BigDecimal.ZERO)
-                            ))
-                            .toList();
+                            Collectors.reducing(BigDecimal.ZERO, PostPayment::getAmount, BigDecimal::add)));
+            List<MonthlyRevenue> revenueList = java.util.stream.IntStream.rangeClosed(1, 12)
+                    .mapToObj(month -> new MonthlyRevenue(
+                            year,
+                            month,
+                            revenueMonth.getOrDefault(month, BigDecimal.ZERO)))
+                    .toList();
             log.debug("Monthly revenue for year {}: {}", year, revenueList);
             return revenueList;
 

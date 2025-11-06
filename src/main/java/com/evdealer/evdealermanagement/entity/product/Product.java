@@ -4,7 +4,6 @@ import com.evdealer.evdealermanagement.entity.BaseEntity;
 import com.evdealer.evdealermanagement.entity.account.Account;
 import com.evdealer.evdealermanagement.entity.battery.BatteryDetails;
 import com.evdealer.evdealermanagement.entity.post.PostPayment;
-import com.evdealer.evdealermanagement.entity.vehicle.ModelVersion;
 import com.evdealer.evdealermanagement.entity.vehicle.VehicleDetails;
 import com.evdealer.evdealermanagement.utils.VietNamDatetime;
 import jakarta.persistence.*;

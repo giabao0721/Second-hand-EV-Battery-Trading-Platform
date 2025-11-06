@@ -19,6 +19,7 @@ import com.evdealer.evdealermanagement.entity.post.PostPayment;
 import com.evdealer.evdealermanagement.entity.product.Product;
 import com.evdealer.evdealermanagement.exceptions.AppException;
 import com.evdealer.evdealermanagement.exceptions.ErrorCode;
+import com.evdealer.evdealermanagement.mapper.product.ProductRenewalMapper;
 import com.evdealer.evdealermanagement.repository.PostPackageOptionRepository;
 import com.evdealer.evdealermanagement.repository.PostPackageRepository;
 import com.evdealer.evdealermanagement.repository.PostPaymentRepository;
@@ -48,16 +49,24 @@ public class ProductRenewalService {
 
     @Transactional
     public ProductRenewalResponse renewalProduct(String productId, ProductRenewalRequest req) {
+        log.info("=== [START] Renewal process for productId: {} ===", productId);
+
+        // ===== Fetch product =====
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
+        log.debug("Fetched product: id={}, status={}", product.getId(), product.getStatus());
 
+        // ===== Validate product status =====
         if (product.getStatus() != Product.Status.ACTIVE && product.getStatus() != Product.Status.EXPIRED) {
+            log.warn("Invalid product status for renewal: {}", product.getStatus());
             throw new AppException(ErrorCode.PACKAGE_INVALID_STATUS,
                     "Only renewal when the post is ACTIVE or EXPIRED");
         }
 
+        // ===== Validate package selection =====
         if ((req.getStandardPackageId() == null || req.getStandardPackageId().isBlank()) &&
                 (req.getAddonPackageId() == null || req.getAddonPackageId().isBlank())) {
+            log.warn("Renewal request missing package selection");
             throw new AppException(ErrorCode.BAD_REQUEST, "Phải chọn ít nhất một gói để gia hạn");
         }
 
@@ -69,58 +78,74 @@ public class ProductRenewalService {
         Integer standardDays = null;
         Integer addonDays = null;
 
-        // ===== Gia hạn gói đăng tin=====
+        // ===== STANDARD package handling =====
         if (req.getStandardPackageId() != null && !req.getStandardPackageId().isBlank()) {
+            log.debug("Processing STANDARD package: {}", req.getStandardPackageId());
             standardPkg = packageRepo.findById(req.getStandardPackageId())
                     .orElseThrow(() -> new AppException(ErrorCode.PACKAGE_NOT_FOUND));
 
-            if (!"STANDARD".equalsIgnoreCase(standardPkg.getCode()))
+            if (!"STANDARD".equalsIgnoreCase(standardPkg.getCode())) {
+                log.error("Invalid standard package code: {}", standardPkg.getCode());
                 throw new AppException(ErrorCode.INVALID_ID_PACKAGE,
                         "standardPackageId must be the STANDARD package");
+            }
 
-            if (standardPkg.getStatus() != PostPackage.Status.ACTIVE)
+            if (standardPkg.getStatus() != PostPackage.Status.ACTIVE) {
+                log.error("Standard package is inactive: {}", standardPkg.getId());
                 throw new AppException(ErrorCode.PACKAGE_INACTIVE);
+            }
 
-            totalPayable = totalPayable.add(standardPkg.getPrice() != null ? standardPkg.getPrice() : BigDecimal.ZERO);
-
+            BigDecimal pkgPrice = standardPkg.getPrice() != null ? standardPkg.getPrice() : BigDecimal.ZERO;
+            totalPayable = totalPayable.add(pkgPrice);
             standardDays = (standardPkg.getBaseDurationDays() != null && standardPkg.getBaseDurationDays() > 0)
                     ? standardPkg.getBaseDurationDays()
                     : 30;
+            log.info("Standard package validated: id={}, price={}, days={}", standardPkg.getId(), pkgPrice,
+                    standardDays);
         }
 
-        // ===== Gia hạn gói ưu tiên / đặc biệt =====
+        // ===== ADDON package handling =====
         if (req.getAddonPackageId() != null && !req.getAddonPackageId().isBlank()) {
+            log.debug("Processing ADDON package: {}", req.getAddonPackageId());
             addonPkg = packageRepo.findById(req.getAddonPackageId())
                     .orElseThrow(() -> new AppException(ErrorCode.PACKAGE_NOT_FOUND));
 
-            if (addonPkg.getStatus() != PostPackage.Status.ACTIVE)
+            if (addonPkg.getStatus() != PostPackage.Status.ACTIVE) {
+                log.error("Addon package is inactive: {}", addonPkg.getId());
                 throw new AppException(ErrorCode.PACKAGE_INACTIVE);
+            }
 
-            if (req.getOptionId() == null || req.getOptionId().isBlank())
+            if (req.getOptionId() == null || req.getOptionId().isBlank()) {
+                log.error("Addon package missing optionId");
                 throw new AppException(ErrorCode.PACKAGE_OPTION_REQUIRED);
+            }
 
             addonOpt = optionRepo.findById(req.getOptionId())
                     .orElseThrow(() -> new AppException(ErrorCode.PACKAGE_OPTION_NOT_FOUND));
 
-            if (!addonOpt.getPostPackage().getId().equals(addonPkg.getId()))
+            if (!addonOpt.getPostPackage().getId().equals(addonPkg.getId())) {
+                log.error("Addon option {} does not belong to package {}", addonOpt.getId(), addonPkg.getId());
                 throw new AppException(ErrorCode.PACKAGE_OPTION_NOT_BELONG_TO_PACKAGE);
-
-            totalPayable = totalPayable.add(addonOpt.getPrice() != null ? addonOpt.getPrice() : BigDecimal.ZERO);
-
-            addonDays = (addonOpt.getDurationDays() != null ? addonOpt.getDurationDays() : 0);
-        }
-
-        if (standardDays != null && addonDays != null) {
-            if (addonDays >= standardDays) {
-                throw new AppException(ErrorCode.BAD_REQUEST,
-                        "The number of days of the priority/special package must be less than the number of days of the (STANDARD) package");
             }
+
+            BigDecimal addonPrice = addonOpt.getPrice() != null ? addonOpt.getPrice() : BigDecimal.ZERO;
+            totalPayable = totalPayable.add(addonPrice);
+            addonDays = (addonOpt.getDurationDays() != null ? addonOpt.getDurationDays() : 0);
+            log.info("Addon package validated: id={}, optionId={}, price={}, days={}",
+                    addonPkg.getId(), addonOpt.getId(), addonPrice, addonDays);
         }
 
-        // Chọn package để lưu vào payment (đảm bảo package_id không null)
-        PostPackage paymentPkg = (standardPkg != null) ? standardPkg : addonPkg;
+        // ===== Validate days relationship =====
+        if (standardDays != null && addonDays != null && addonDays >= standardDays) {
+            log.error("Addon days ({}) >= Standard days ({})", addonDays, standardDays);
+            throw new AppException(ErrorCode.BAD_REQUEST,
+                    "The number of days of the priority/special package must be less than the STANDARD package");
+        }
 
-        // ===== Tạo bản ghi thanh toán =====
+        // ===== Prepare payment record =====
+        PostPackage paymentPkg = (standardPkg != null) ? standardPkg : addonPkg;
+        log.debug("Creating PostPayment for accountId={}, totalPayable={}", product.getSeller().getId(), totalPayable);
+
         PostPayment payment = PostPayment.builder()
                 .accountId(product.getSeller().getId())
                 .product(product)
@@ -135,33 +160,38 @@ public class ProductRenewalService {
                         : PostPayment.PaymentStatus.PENDING)
                 .createdAt(nowVietNam())
                 .build();
-        postPaymentRepository.save(payment);
 
-        // ====== Xử lý thanh toán ======
+        postPaymentRepository.save(payment);
+        log.info("Saved PostPayment: id={}, status={}, method={}",
+                payment.getId(), payment.getPaymentStatus(), payment.getPaymentMethod());
+
+        // ===== Payment gateway integration =====
         String paymentUrl = null;
         if (totalPayable.signum() > 0 && req.getPaymentMethod() != null) {
             long amountVND = totalPayable.setScale(0, RoundingMode.HALF_UP).longValue();
             String method = req.getPaymentMethod().toUpperCase();
+            log.info("Initiating payment via {} for amount: {}", method, amountVND);
 
-            if ("VNPAY".equals(method)) {
-                paymentUrl = vnpayService.createPayment(
-                        new VnpayRequest(payment.getId(), String.valueOf(amountVND))).getPaymentUrl();
-            } else if ("MOMO".equals(method)) {
-                paymentUrl = momoService.createPaymentRequest(
-                        new MomoRequest(payment.getId(), String.valueOf(amountVND))).getPayUrl();
-            } else {
-                throw new IllegalArgumentException("Unsupported payment method: " + req.getPaymentMethod());
+            try {
+                if ("VNPAY".equals(method)) {
+                    paymentUrl = vnpayService.createPayment(
+                            new VnpayRequest(payment.getId(), String.valueOf(amountVND))).getPaymentUrl();
+                } else if ("MOMO".equals(method)) {
+                    paymentUrl = momoService.createPaymentRequest(
+                            new MomoRequest(payment.getId(), String.valueOf(amountVND))).getPayUrl();
+                } else {
+                    log.error("Unsupported payment method: {}", req.getPaymentMethod());
+                    throw new IllegalArgumentException("Unsupported payment method: " + req.getPaymentMethod());
+                }
+                log.info("Payment URL created successfully: {}", paymentUrl);
+            } catch (Exception e) {
+                log.error("Payment creation failed via {}: {}", method, e.getMessage(), e);
+                throw e;
             }
         }
 
-        return ProductRenewalResponse.builder()
-                .productId(product.getId())
-                .status(product.getStatus())
-                .totalPayable(totalPayable)
-                .currency("VND")
-                .paymentUrl(paymentUrl)
-                .updatedAt(nowVietNam())
-                .build();
+        log.info("=== [END] Renewal completed for productId: {} | totalPayable={} ===", productId, totalPayable);
+        return ProductRenewalMapper.mapToProductRenewalResponse(product, totalPayable, paymentUrl);
     }
 
     @Transactional

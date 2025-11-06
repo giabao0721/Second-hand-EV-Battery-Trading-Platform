@@ -1,6 +1,5 @@
 package com.evdealer.evdealermanagement.repository;
 
-import com.evdealer.evdealermanagement.dto.common.PageResponse;
 import com.evdealer.evdealermanagement.entity.account.SellerReview;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

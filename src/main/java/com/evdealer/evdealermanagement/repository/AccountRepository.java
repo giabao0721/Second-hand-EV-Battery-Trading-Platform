@@ -8,9 +8,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import java.time.Instant;
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Optional;
 
 public interface AccountRepository extends JpaRepository<Account, String> {
@@ -44,7 +42,7 @@ public interface AccountRepository extends JpaRepository<Account, String> {
     long countByRole(Account.Role role);
 
     @Query("SELECT COUNT(a) FROM Account a WHERE a.role = :role AND a.createdAt > :start AND a.createdAt < :end")
-    long countCreatedInPeriod(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end, @Param("role") Account.Role role);
-
+    long countCreatedInPeriod(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end,
+            @Param("role") Account.Role role);
 
 }

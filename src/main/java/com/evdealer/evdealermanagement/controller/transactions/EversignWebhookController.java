@@ -5,7 +5,6 @@ import com.evdealer.evdealermanagement.service.implement.EversignService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 
@@ -26,8 +25,7 @@ public class EversignWebhookController {
     @PostMapping("/document-complete")
     public ResponseEntity<?> handleDocumentComplete(
             @RequestBody(required = false) Map<String, Object> payload,
-            @RequestHeader Map<String, String> headers
-    ) {
+            @RequestHeader Map<String, String> headers) {
         log.info("================== WEBHOOK RECEIVED ==================");
         log.info("📥 Headers: {}", headers);
         log.info("📦 Payload: {}", payload);
@@ -79,8 +77,7 @@ public class EversignWebhookController {
                     return ResponseEntity.badRequest().body(Map.of(
                             "success", false,
                             "error", "Document chưa được ký hoàn tất trên Eversign",
-                            "is_completed", isCompleted
-                    ));
+                            "is_completed", isCompleted));
                 }
             }
 
@@ -89,15 +86,13 @@ public class EversignWebhookController {
 
             return ResponseEntity.ok(Map.of(
                     "success", true,
-                    "message", "✅ Đã xử lý thành công document: " + documentHash
-            ));
+                    "message", "✅ Đã xử lý thành công document: " + documentHash));
 
         } catch (Exception e) {
             log.error("❌ Lỗi: {}", e.getMessage(), e);
             return ResponseEntity.status(500).body(Map.of(
                     "success", false,
-                    "error", e.getMessage()
-            ));
+                    "error", e.getMessage()));
         }
     }
 }

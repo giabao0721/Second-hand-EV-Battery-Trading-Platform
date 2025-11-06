@@ -3,9 +3,6 @@ package com.evdealer.evdealermanagement.controller.member;
 import com.evdealer.evdealermanagement.dto.account.custom.CustomAccountDetails;
 
 import com.evdealer.evdealermanagement.dto.notify.NotificationResponse;
-import com.evdealer.evdealermanagement.entity.notify.Notification;
-import com.evdealer.evdealermanagement.mapper.notify.NotificationMapper;
-import com.evdealer.evdealermanagement.repository.NotificationRepository;
 import com.evdealer.evdealermanagement.service.implement.NotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,8 +15,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import java.nio.file.AccessDeniedException;
-import java.util.HashMap;
 import java.util.Map;
 
 @RestController
@@ -30,13 +25,11 @@ public class NotificationController {
 
     private final NotificationService notificationService;
 
-
-
-    //Lấy danh sách thông báo của user hiện tại
+    // Lấy danh sách thông báo của user hiện tại
     @GetMapping
     @PreAuthorize("hasRole('MEMBER')")
     public ResponseEntity<Page<NotificationResponse>> list(@AuthenticationPrincipal CustomAccountDetails user,
-                                                                   @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
         String accountId = user.getAccountId();
         Page<NotificationResponse> notifications = notificationService.listMyNotifications(accountId, pageable);
         log.debug("User {} fetched {} notifications (page {})",
@@ -46,13 +39,13 @@ public class NotificationController {
 
     @PatchMapping("/{id}/read")
     @PreAuthorize("hasRole('MEMBER')")
-    public ResponseEntity<Map<String, Object>> markAsRead(@AuthenticationPrincipal CustomAccountDetails user, @PathVariable String id)  {
+    public ResponseEntity<Map<String, Object>> markAsRead(@AuthenticationPrincipal CustomAccountDetails user,
+            @PathVariable String id) {
         String accountId = user.getAccountId();
         NotificationResponse res = notificationService.markAsRead(accountId, id);
         return ResponseEntity.ok(Map.of(
                 "message", res.isRead() ? "Đã đánh dấu là đã đọc" : "Thông báo đã được đọc trước đó",
-                "notification", res
-        ));
+                "notification", res));
     }
 
     @PatchMapping("/read-all")
@@ -65,8 +58,7 @@ public class NotificationController {
 
         return ResponseEntity.ok(Map.of(
                 "message", "Đã đánh dấu tất cả thông báo là đã đọc",
-                "updatedCount", updatedCount
-        ));
+                "updatedCount", updatedCount));
     }
 
     @GetMapping("/unread-count")
@@ -101,6 +93,5 @@ public class NotificationController {
         Map<String, Object> result = notificationService.deleteAll(accountId, force);
         return ResponseEntity.ok(result);
     }
-
 
 }

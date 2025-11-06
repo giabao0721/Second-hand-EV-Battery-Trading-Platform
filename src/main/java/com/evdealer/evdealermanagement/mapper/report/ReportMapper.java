@@ -3,7 +3,6 @@ package com.evdealer.evdealermanagement.mapper.report;
 import com.evdealer.evdealermanagement.dto.post.report.ReportResponse;
 import com.evdealer.evdealermanagement.entity.product.Product;
 import com.evdealer.evdealermanagement.entity.report.Report;
-import com.evdealer.evdealermanagement.mapper.product.ProductMapper;
 
 public final class ReportMapper {
     private ReportMapper() {

@@ -21,10 +21,8 @@ import com.evdealer.evdealermanagement.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -67,11 +65,10 @@ public class PaymentService {
             throw new AppException(ErrorCode.PACKAGE_INACTIVE);
         }
 
-
         BigDecimal totalPayable;
 
         if (pkg.getBillingMode() == PostPackage.BillingMode.FIXED) {
-            totalPayable = pkg.getPrice(); //10.000đ
+            totalPayable = pkg.getPrice(); // 10.000đ
         } else if (pkg.getBillingMode() == PostPackage.BillingMode.PER_DAY) {
             if (request.getOptionId() == null) {
                 throw new AppException(ErrorCode.PACKAGE_OPTION_REQUIRED);

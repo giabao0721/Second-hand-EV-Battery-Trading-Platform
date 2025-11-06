@@ -7,7 +7,6 @@ import com.evdealer.evdealermanagement.dto.common.PageResponse;
 import com.evdealer.evdealermanagement.service.implement.SellerReviewService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
@@ -28,8 +27,7 @@ public class SellerReviewController {
     @PostMapping
     public ResponseEntity<SellerReviewResponse> create(
             @AuthenticationPrincipal CustomAccountDetails user,
-           @Valid @RequestBody SellerReviewRequest request
-    ) {
+            @Valid @RequestBody SellerReviewRequest request) {
         String buyerId = user.getAccountId();
         return ResponseEntity.ok(sellerReviewService.createSellerReview(buyerId, request));
     }
@@ -37,8 +35,7 @@ public class SellerReviewController {
     @GetMapping("/seller/{sellerId}")
     public ResponseEntity<PageResponse<SellerReviewResponse>> list(
             @PathVariable String sellerId,
-            @PageableDefault(size = 5, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
-    ) {
+            @PageableDefault(size = 5, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
         return ResponseEntity.ok(sellerReviewService.getReviewsOfSeller(sellerId, pageable));
     }
 

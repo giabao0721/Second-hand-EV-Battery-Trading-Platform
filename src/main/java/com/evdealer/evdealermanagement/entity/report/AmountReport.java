@@ -1,6 +1,5 @@
 package com.evdealer.evdealermanagement.entity.report;
 
-import com.evdealer.evdealermanagement.entity.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;

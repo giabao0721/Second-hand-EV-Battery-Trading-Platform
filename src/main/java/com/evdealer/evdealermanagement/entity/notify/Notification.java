@@ -8,7 +8,6 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
-import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
 
@@ -58,9 +57,9 @@ public class Notification extends BaseEntity {
         PAYMENT_SUCCESS,
         SYSTEM_ANNOUNCEMENT,
         PURCHASE_REQUEST,
-        PURCHASE_REQUEST_ACCEPTED,     // Seller chấp nhận → notify Buyer
-        PURCHASE_REQUEST_REJECTED,     // Seller từ chối → notify Buyer
-        PURCHASE_REQUEST_COMPLETED,    // Hai bên ký xong → notify 2 bên
-        PURCHASE_REQUEST_CANCELLED     // Hủy (bên nào cũng được) → notify bên còn lại
+        PURCHASE_REQUEST_ACCEPTED, // Seller chấp nhận → notify Buyer
+        PURCHASE_REQUEST_REJECTED, // Seller từ chối → notify Buyer
+        PURCHASE_REQUEST_COMPLETED, // Hai bên ký xong → notify 2 bên
+        PURCHASE_REQUEST_CANCELLED // Hủy (bên nào cũng được) → notify bên còn lại
     }
 }

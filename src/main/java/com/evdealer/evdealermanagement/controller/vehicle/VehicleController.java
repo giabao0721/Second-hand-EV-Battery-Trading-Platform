@@ -1,8 +1,5 @@
 package com.evdealer.evdealermanagement.controller.vehicle;
 
-import com.evdealer.evdealermanagement.dto.account.custom.CustomAccountDetails;
-import com.evdealer.evdealermanagement.dto.post.vehicle.VehiclePostRequest;
-import com.evdealer.evdealermanagement.dto.post.vehicle.VehiclePostResponse;
 import com.evdealer.evdealermanagement.dto.product.similar.SimilarProductResponse;
 import com.evdealer.evdealermanagement.dto.vehicle.brand.VehicleBrandsResponse;
 import com.evdealer.evdealermanagement.dto.vehicle.brand.VehicleCategoriesResponse;
@@ -12,22 +9,14 @@ import com.evdealer.evdealermanagement.dto.vehicle.model.VehicleModelResponse;
 import com.evdealer.evdealermanagement.dto.vehicle.model.VehicleModelVersionRequest;
 import com.evdealer.evdealermanagement.dto.vehicle.model.VehicleModelVersionResponse;
 
-
 import com.evdealer.evdealermanagement.service.implement.GeminiRestService;
 import com.evdealer.evdealermanagement.service.implement.VehicleService;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
-
 
 @RestController
 @RequiredArgsConstructor
@@ -52,12 +41,13 @@ public class VehicleController {
         return vehicleService.listAllVehicleNameAndLogo();
     }
 
-//    @PostMapping("/specs")
-//    public ResponseEntity<VehicleCatalogDTO> getVehicleSpecs(@RequestBody Map<String, String> body) {
-//        String name = body.get("name");
-//        VehicleCatalogDTO specs = geminiRestService.getVehicleSpecs(name);
-//        return ResponseEntity.ok(specs);
-//    }
+    // @PostMapping("/specs")
+    // public ResponseEntity<VehicleCatalogDTO> getVehicleSpecs(@RequestBody
+    // Map<String, String> body) {
+    // String name = body.get("name");
+    // VehicleCatalogDTO specs = geminiRestService.getVehicleSpecs(name);
+    // return ResponseEntity.ok(specs);
+    // }
 
     @PostMapping("/models/all")
     public List<VehicleModelResponse> getAllModels(@RequestBody VehicleModelRequest request) {

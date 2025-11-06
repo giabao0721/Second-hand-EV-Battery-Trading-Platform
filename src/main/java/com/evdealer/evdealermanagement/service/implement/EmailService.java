@@ -16,10 +16,8 @@ import org.thymeleaf.context.Context;
 
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.text.NumberFormat;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
-import java.util.Locale;
 
 import com.sendgrid.Method;
 import com.sendgrid.Request;
@@ -27,7 +25,6 @@ import com.sendgrid.Response;
 import com.sendgrid.SendGrid;
 import com.sendgrid.helpers.mail.Mail;
 import com.sendgrid.helpers.mail.objects.Content;
-
 
 @Service
 @Slf4j
@@ -74,7 +71,8 @@ public class EmailService {
     // 1️⃣ PURCHASE REQUEST → SELLER
     // ==============================================
     @Async
-    public void sendPurchaseRequestNotification(String sellerEmail, String buyerName, String productTitle, BigDecimal offeredPrice, String requestId) {
+    public void sendPurchaseRequestNotification(String sellerEmail, String buyerName, String productTitle,
+            BigDecimal offeredPrice, String requestId) {
 
         String viewRequestUrl = "http://localhost:5173/seller/purchase-requests/" + requestId;
 
@@ -99,7 +97,8 @@ public class EmailService {
     // 2️⃣ PURCHASE ACCEPTED → BUYER
     // ==============================================
     @Async
-    public void sendPurchaseAcceptedNotification(String buyerEmail, String sellerName, String productTitle, String contractUrl) {
+    public void sendPurchaseAcceptedNotification(String buyerEmail, String sellerName, String productTitle,
+            String contractUrl) {
 
         Context context = new Context();
         context.setVariable("sellerName", sellerName);
@@ -115,7 +114,8 @@ public class EmailService {
     // 3️⃣ PURCHASE REJECTED → BUYER
     // ==============================================
     @Async
-    public void sendPurchaseRejectedNotification(String buyerEmail, String sellerName, String productTitle, String rejectReason) {
+    public void sendPurchaseRejectedNotification(String buyerEmail, String sellerName, String productTitle,
+            String rejectReason) {
 
         Context context = new Context();
         context.setVariable("sellerName", sellerName);
@@ -131,7 +131,8 @@ public class EmailService {
     // 4️⃣ CONTRACT → BUYER
     // ==============================================
     @Async
-    public void sendContractToBuyer(String buyerEmail, String buyerName, String sellerName, String productTitle, String buyerSignUrl) {
+    public void sendContractToBuyer(String buyerEmail, String buyerName, String sellerName, String productTitle,
+            String buyerSignUrl) {
 
         Context context = new Context();
         context.setVariable("buyerName", buyerName);
@@ -148,7 +149,8 @@ public class EmailService {
     // 5️⃣ CONTRACT → SELLER
     // ==============================================
     @Async
-    public void sendContractToSeller(String sellerEmail, String sellerName, String buyerName, String productTitle, String sellerSignUrl) {
+    public void sendContractToSeller(String sellerEmail, String sellerName, String buyerName, String productTitle,
+            String sellerSignUrl) {
 
         Context context = new Context();
         context.setVariable("sellerName", sellerName);
@@ -182,19 +184,19 @@ public class EmailService {
     @Async
     public void sendProductExpireSoon(String to, String productTitle, LocalDateTime expiresAt) {
 
-            Context context = new Context();
-            context.setVariable("productTitle", productTitle);
+        Context context = new Context();
+        context.setVariable("productTitle", productTitle);
 
-            ZonedDateTime vnTime = expiresAt.atZone(VN);
-            context.setVariable("expiryDate", vnTime.toLocalDateTime().format(DATE_FMT));
-            context.setVariable("expiryTime", vnTime.toLocalDateTime().format(TIME_FMT));
+        ZonedDateTime vnTime = expiresAt.atZone(VN);
+        context.setVariable("expiryDate", vnTime.toLocalDateTime().format(DATE_FMT));
+        context.setVariable("expiryTime", vnTime.toLocalDateTime().format(TIME_FMT));
 
-            long daysLeft = Duration.between(LocalDateTime.now(), expiresAt).toDays();
-            context.setVariable("daysLeft", daysLeft);
+        long daysLeft = Duration.between(LocalDateTime.now(), expiresAt).toDays();
+        context.setVariable("daysLeft", daysLeft);
 
-            String htmlContent = templateEngine.process("email/product-expire-soon", context);
-            sendEmail(to, "Nhắc nhở: Sản phẩm sắp hết hạn", htmlContent);
-            log.info("📩 Product expire reminder sent to {}", to);
+        String htmlContent = templateEngine.process("email/product-expire-soon", context);
+        sendEmail(to, "Nhắc nhở: Sản phẩm sắp hết hạn", htmlContent);
+        log.info("📩 Product expire reminder sent to {}", to);
     }
 
     // ==============================================
@@ -228,7 +230,8 @@ public class EmailService {
 
     private void sendViaSendGrid(String to, String subject, String htmlContent) {
         try {
-            com.sendgrid.helpers.mail.objects.Email from = new com.sendgrid.helpers.mail.objects.Email(sendGridFrom, sendGridFromName);
+            com.sendgrid.helpers.mail.objects.Email from = new com.sendgrid.helpers.mail.objects.Email(sendGridFrom,
+                    sendGridFromName);
             com.sendgrid.helpers.mail.objects.Email toEmail = new com.sendgrid.helpers.mail.objects.Email(to);
 
             Content content = new Content("text/html", htmlContent);

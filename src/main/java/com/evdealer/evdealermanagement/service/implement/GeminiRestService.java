@@ -16,12 +16,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -86,15 +82,12 @@ public class GeminiRestService {
 
             Map<String, Object> requestBody = Map.of(
                     "contents", List.of(
-                            Map.of("parts", List.of(Map.of("text", prompt)))
-                    ),
+                            Map.of("parts", List.of(Map.of("text", prompt)))),
                     "generationConfig", Map.of(
                             "temperature", temperature,
                             "maxOutputTokens", maxTokens,
                             "topP", 0.95,
-                            "topK", 40
-                    )
-            );
+                            "topK", 40));
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
@@ -122,26 +115,26 @@ public class GeminiRestService {
      * Build optimized prompt for price suggestion with JSON output
      */
     private String buildPricePrompt(String vehicleModel, String versionName,
-                                    String batteryHealth, String mileageKm,
-                                    String brandName, String manufactureYear) {
+            String batteryHealth, String mileageKm,
+            String brandName, String manufactureYear) {
         if (versionName == null) {
             versionName = "Phiên bản tiêu chuẩn, mặc định của nhà sản xuất";
         }
 
         return String.format("""
                 Bạn là chuyên gia định giá xe điện cũ tại Việt Nam.
-                
+
                 XE CẦN ĐỊNH GIÁ:
                 - Hãng: %s | Model: %s | Version: %s
                 - Năm: %s | Pin: %s | Km đã đi: %s
-                
+
                 QUY TẮC KHẤU HAO:
                 1. Ra biển số: -10-15%%
                 2. Mỗi năm: -8-12%%
                 3. Km > 20k/năm: -3-5%%
                 4. Pin < 90%%: -5-10%%
                 → Tổng: -20-35%% so với giá mới
-                
+
                 YÊU CẦU: Trả về JSON THUẦN TÚY (không thêm ```json):
                 {
                   "title": "%s %s %s %s",
@@ -306,12 +299,12 @@ public class GeminiRestService {
      * Validate car sales source URLs
      */
     private boolean isValidCarSalesSource(String url) {
-        if (url == null || url.isEmpty()) return false;
+        if (url == null || url.isEmpty())
+            return false;
         String lower = url.toLowerCase();
         List<String> validDomains = List.of(
                 "chotot.com", "bonbanh.com", "oto.com.vn",
-                "carmudi.vn", "choxe.vn"
-        );
+                "carmudi.vn", "choxe.vn");
         return validDomains.stream().anyMatch(lower::contains);
     }
 
@@ -322,8 +315,7 @@ public class GeminiRestService {
         return List.of(
                 "https://www.chotot.com/mua-ban-oto",
                 "https://bonbanh.com/oto-cu",
-                "https://oto.com.vn/mua-ban-xe"
-        );
+                "https://oto.com.vn/mua-ban-xe");
     }
 
     /**
@@ -343,8 +335,7 @@ public class GeminiRestService {
                 reason,
                 getDefaultSources(),
                 description,
-                title
-        );
+                title);
     }
 
     // ========== Suggest Specs ==========
@@ -358,7 +349,7 @@ public class GeminiRestService {
                         Bạn là chuyên gia xe điện.
                         Hãy dựa vào tên sản phẩm "%s", model "%s", thương hiệu "%s", phiên bản "%s", và năm sản xuất "%d" để trả về thông số kỹ thuật chuẩn dưới dạng JSON.
                         KHÔNG thêm lời giải thích, markdown, hoặc bất kỳ ký tự nào ngoài JSON thuần túy.
-                        
+
                         Cấu trúc JSON cần có CHÍNH XÁC các trường sau:
                         {
                           "model": "Tên đầy đủ của model",
@@ -380,14 +371,14 @@ public class GeminiRestService {
                           "wheelbase_mm": "Chiều dài cơ sở (số mm, không có đơn vị)",
                           "features": ["Tính năng 1", "Tính năng 2", "Tính năng 3", "Tính năng 4", "Tính năng 5"]
                         }
-                        
+
                         QUY TẮC BẮT BUỘC:
                         - TẤT CẢ các trường số phải là số nguyên hoặc số thực, KHÔNG có đơn vị, KHÔNG có dấu phẩy phân cách hàng nghìn
                         - Trường "features" phải là mảng string, mỗi tính năng là 1 câu ngắn gọn, từ 5-10 tính năng
                         - Nếu không có thông tin chính xác, hãy ước lượng dựa trên xe cùng phân khúc và năm sản xuất
                         - Nếu là xe máy điện: để null cho "acceleration_0_100_s", điều chỉnh các thông số phù hợp
                         - CHỈ trả về JSON thuần túy, KHÔNG có ```json, KHÔNG có giải thích, KHÔNG có markdown
-                        
+
                         Ví dụ output mong muốn:
                         {
                           "model": "VF e34",
@@ -463,7 +454,7 @@ public class GeminiRestService {
      * Lấy thông số kỹ thuật xe và map thành VehicleCatalogDTO
      */
     public VehicleCatalogDTO getVehicleSpecs(String productName, String vehicleModel, String brand, String version,
-                                             Short year) {
+            Short year) {
         try {
             String json = suggestSpecs(productName, vehicleModel, brand, version, year);
 

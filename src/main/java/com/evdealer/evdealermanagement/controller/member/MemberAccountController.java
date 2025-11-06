@@ -1,6 +1,5 @@
 package com.evdealer.evdealermanagement.controller.member;
 
-import com.evdealer.evdealermanagement.repository.AccountRepository;
 import com.evdealer.evdealermanagement.service.implement.MemberService;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
@@ -14,7 +13,6 @@ import lombok.RequiredArgsConstructor;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -35,7 +33,8 @@ public class MemberAccountController {
 
     @GetMapping("/new/count")
     @PreAuthorize("hasRole('STAFF') or hasRole('ADMIN')")
-    public ResponseEntity<Map<String, Object>> countAccountMemberInPeriod(@RequestParam(value = "date", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)LocalDate date) {
+    public ResponseEntity<Map<String, Object>> countAccountMemberInPeriod(
+            @RequestParam(value = "date", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
         long count = memberService.countAccountMemberInPeriod(date);
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("date", (date != null) ? date : LocalDate.now(ZoneId.of("Asia/Ho_Chi_Minh")).toString());
