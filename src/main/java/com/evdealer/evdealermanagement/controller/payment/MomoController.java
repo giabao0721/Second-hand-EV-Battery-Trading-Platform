@@ -9,7 +9,6 @@ import com.evdealer.evdealermanagement.repository.PostPaymentRepository;
 import com.evdealer.evdealermanagement.repository.ProductRepository;
 import com.evdealer.evdealermanagement.service.implement.PaymentService;
 import com.evdealer.evdealermanagement.service.implement.ProductRenewalService;
-import com.evdealer.evdealermanagement.service.implement.VnpayService;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -26,14 +25,11 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.util.UriUtils;
 
 import com.evdealer.evdealermanagement.dto.payment.MomoRequest;
 import com.evdealer.evdealermanagement.service.implement.MomoService;
 
 import java.io.IOException;
-import java.net.URI;
-import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 @RequestMapping("/api/momo")
@@ -60,28 +56,6 @@ public class MomoController {
         }
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(res);
     }
-
-    // @GetMapping("/return")
-    // public ResponseEntity<String> handleMomoCallback(@RequestParam Map<String,
-    // String> params) {
-    // String orderId = params.get("orderId"); // = paymentId bạn đã gửi khi create
-    // String resultCode = params.getOrDefault("resultCode", "");
-    // String amount = params.getOrDefault("amount", "");
-    // boolean success = "0".equals(resultCode);
-    // paymentService.handlePaymentCallback(orderId, success);
-
-    // String feUrl = "http://localhost:5173/"
-    // + "?method=MOMO"
-    // + "&success=" + success
-    // + "&orderId=" + UriUtils.encode(orderId == null ? "" : orderId,
-    // StandardCharsets.UTF_8)
-    // + "&resultCode=" + UriUtils.encode(resultCode, StandardCharsets.UTF_8)
-    // + (amount.isEmpty() ? ""
-    // : "&amount=" + UriUtils.encode(amount,
-    // StandardCharsets.UTF_8));
-    // return
-    // ResponseEntity.status(HttpStatus.FOUND).location(URI.create(feUrl)).build();
-    // }
 
     @GetMapping("/return")
     public void momoReturn(@RequestParam Map<String, String> params,
@@ -150,12 +124,30 @@ public class MomoController {
 
     @PostMapping("/ipn")
     public ResponseEntity<String> momoIpn(@RequestBody Map<String, Object> body) {
-        // (Tuỳ chọn) Verify chữ ký HMAC từ body theo tài liệu MoMo trước khi chấp nhận
-        String orderId = String.valueOf(body.get("orderId"));
-        String resultCode = String.valueOf(body.get("resultCode"));
-        boolean success = "0".equals(resultCode);
+        log.info("=== [MoMo IPN] Received callback ===");
 
-        paymentService.handlePaymentCallback(orderId, success);
-        return ResponseEntity.ok("OK");
+        try {
+            // Log toàn bộ body nhận từ MoMo (ẩn bớt nếu quá lớn)
+            log.debug("MoMo IPN raw body: {}", body);
+
+            // (Tuỳ chọn) Verify chữ ký HMAC từ body theo tài liệu MoMo
+            String orderId = String.valueOf(body.get("orderId"));
+            String resultCode = String.valueOf(body.get("resultCode"));
+            boolean success = "0".equals(resultCode);
+
+            log.info("Processing MoMo IPN for orderId={} | resultCode={} | success={}", orderId, resultCode, success);
+
+            // Gọi service xử lý kết quả thanh toán
+            paymentService.handlePaymentCallback(orderId, success);
+
+            log.info("MoMo IPN handled successfully for orderId={}", orderId);
+            return ResponseEntity.ok("OK");
+
+        } catch (Exception e) {
+            log.error("Error while handling MoMo IPN: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("FAILED");
+        } finally {
+            log.info("=== [MoMo IPN] Processing finished ===");
+        }
     }
 }

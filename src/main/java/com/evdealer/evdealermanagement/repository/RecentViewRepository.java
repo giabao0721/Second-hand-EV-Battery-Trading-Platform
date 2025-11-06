@@ -1,6 +1,5 @@
 package com.evdealer.evdealermanagement.repository;
 
-import com.evdealer.evdealermanagement.dto.product.detail.ProductDetail;
 import com.evdealer.evdealermanagement.entity.account.RecentView;
 import com.evdealer.evdealermanagement.entity.product.Product;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -18,26 +17,23 @@ public interface RecentViewRepository extends JpaRepository<RecentView, Long> {
     List<RecentView> findByUserIdOrderByViewedAtDesc(String userId);
 
     @Query("""
-        SELECT rv.product FROM RecentView rv
-        LEFT JOIN FETCH rv.product.images
-        WHERE rv.user.id = :userId
-        ORDER BY rv.viewedAt DESC
-    """)
+                SELECT rv.product FROM RecentView rv
+                LEFT JOIN FETCH rv.product.images
+                WHERE rv.user.id = :userId
+                ORDER BY rv.viewedAt DESC
+            """)
     List<Product> findProductsByUserId(@Param("userId") String userId); // Giữ lại hàm cũ (nếu bạn cần)
 
     @Query(value = """
-        SELECT rv.product FROM RecentView rv
-        WHERE rv.user.id = :userId
-        ORDER BY rv.viewedAt DESC
-    """,
-            countQuery = """
-        SELECT COUNT(rv) FROM RecentView rv
-        WHERE rv.user.id = :userId
-    """)
+                SELECT rv.product FROM RecentView rv
+                WHERE rv.user.id = :userId
+                ORDER BY rv.viewedAt DESC
+            """, countQuery = """
+                SELECT COUNT(rv) FROM RecentView rv
+                WHERE rv.user.id = :userId
+            """)
     org.springframework.data.domain.Page<Product> findPagedProductsByUserId(
             @Param("userId") String userId,
-            org.springframework.data.domain.Pageable pageable
-    );
-
+            org.springframework.data.domain.Pageable pageable);
 
 }

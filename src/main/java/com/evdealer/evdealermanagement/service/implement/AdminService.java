@@ -3,9 +3,7 @@ package com.evdealer.evdealermanagement.service.implement;
 import com.evdealer.evdealermanagement.dto.account.custom.CustomAccountDetails;
 import com.evdealer.evdealermanagement.dto.common.PageResponse;
 import com.evdealer.evdealermanagement.dto.product.detail.ProductDetail;
-import com.evdealer.evdealermanagement.dto.revenue.MonthlyRevenue;
 import com.evdealer.evdealermanagement.entity.account.Account;
-import com.evdealer.evdealermanagement.entity.post.PostPayment;
 import com.evdealer.evdealermanagement.entity.product.Product;
 import com.evdealer.evdealermanagement.exceptions.AppException;
 import com.evdealer.evdealermanagement.exceptions.ErrorCode;
@@ -24,9 +22,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -62,7 +58,7 @@ public class AdminService {
     }
 
     public PageResponse<Account> getMemberAccounts(Pageable pageable) {
-        return getAccountsByRole(Account.Role.MEMBER,  pageable);
+        return getAccountsByRole(Account.Role.MEMBER, pageable);
     }
 
     public PageResponse<Account> getStaffAccounts(Pageable pageable) {
@@ -110,8 +106,7 @@ public class AdminService {
             account.setUpdatedAt(VietNamDatetime.nowVietNam());
             accountRepository.save(account);
             return true;
-        }
-        else {
+        } else {
             log.warn("Account with id: {} not found", id);
             return false;
         }
@@ -165,12 +160,12 @@ public class AdminService {
         Account admin = accountRepository.findById(adminId)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
-        if(!passwordEncoder.matches(adminPassword, admin.getPasswordHash())) {
+        if (!passwordEncoder.matches(adminPassword, admin.getPasswordHash())) {
             log.warn("Admin {} entered wrong password", adminUsername);
             throw new RuntimeException("Wrong password");
         }
 
-        if(adminId.equals(accountId)) {
+        if (adminId.equals(accountId)) {
             throw new RuntimeException("Cannot delete your own account");
         }
 

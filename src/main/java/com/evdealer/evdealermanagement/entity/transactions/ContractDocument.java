@@ -1,6 +1,5 @@
 package com.evdealer.evdealermanagement.entity.transactions;
 
-import com.evdealer.evdealermanagement.utils.VietNamDatetime;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;

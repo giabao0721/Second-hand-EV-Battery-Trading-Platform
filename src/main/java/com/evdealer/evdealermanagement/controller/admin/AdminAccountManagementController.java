@@ -19,11 +19,7 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/admin")
@@ -35,13 +31,15 @@ public class AdminAccountManagementController {
 
     @GetMapping("/manage/account/member")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<PageResponse<Account>> getMemberAccount(@PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+    public ResponseEntity<PageResponse<Account>> getMemberAccount(
+            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
         return ResponseEntity.ok(adminService.getMemberAccounts(pageable));
     }
 
     @GetMapping("/manage/account/staff")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<PageResponse<Account>> getStaffAccount(@PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+    public ResponseEntity<PageResponse<Account>> getStaffAccount(
+            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
         return ResponseEntity.ok(adminService.getStaffAccounts(pageable));
     }
 
@@ -60,8 +58,7 @@ public class AdminAccountManagementController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<String> changeAccountStatus(
             @PathVariable String id,
-            @RequestParam Account.Status status
-    ) {
+            @RequestParam Account.Status status) {
         boolean updated = adminService.changeStatusAccount(id, status);
         if (updated) {
             return ResponseEntity.ok("Account status updated successfully");
@@ -73,7 +70,8 @@ public class AdminAccountManagementController {
     @PostMapping("/register/staff")
     @ResponseBody
     @PreAuthorize("hasRole('ADMIN')")
-    public ApiResponse<AccountRegisterResponse> registerStaffAccount(@Valid @RequestBody AccountRegisterRequest request) {
+    public ApiResponse<AccountRegisterResponse> registerStaffAccount(
+            @Valid @RequestBody AccountRegisterRequest request) {
         AccountRegisterResponse response = authService.registerStaffAccount(request);
         return new ApiResponse<>(ErrorCode.SUCCESS.getCode(), ErrorCode.SUCCESS.getMessage(), response);
     }
@@ -95,8 +93,8 @@ public class AdminAccountManagementController {
     @DeleteMapping("/delete/{accountId}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<String> deleteAccount(@PathVariable String accountId,
-                                                @RequestBody DeleteRequest request,
-                                                @AuthenticationPrincipal CustomAccountDetails adminDetails) {
+            @RequestBody DeleteRequest request,
+            @AuthenticationPrincipal CustomAccountDetails adminDetails) {
         String adminPassword = request.getAdminPassword();
         adminService.deleteAccountForAdmin(accountId, adminPassword, adminDetails);
 

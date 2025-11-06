@@ -5,12 +5,11 @@ import com.evdealer.evdealermanagement.entity.battery.BatteryBrands;
 import com.evdealer.evdealermanagement.entity.battery.BatteryDetails;
 import com.evdealer.evdealermanagement.entity.battery.BatteryTypes;
 
-import java.util.UUID;
-
 public class BatteryDetailsMapper {
 
     public static BatteryDetailsDto toDto(BatteryDetails entity) {
-        if (entity == null) return null;
+        if (entity == null)
+            return null;
 
         return BatteryDetailsDto.builder()
                 .productId(entity.getProductId() != null ? entity.getProductId() : null)
@@ -25,7 +24,8 @@ public class BatteryDetailsMapper {
 
     // DTO -> Entity (chỉ map data cơ bản, service sẽ set quan hệ)
     public static BatteryDetails toEntity(BatteryDetailsDto dto) {
-        if (dto == null) return null;
+        if (dto == null)
+            return null;
 
         BatteryDetails entity = new BatteryDetails();
 

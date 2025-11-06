@@ -10,7 +10,6 @@ import com.evdealer.evdealermanagement.mapper.account.AccountMapper;
 import com.evdealer.evdealermanagement.repository.AccountRepository;
 import com.evdealer.evdealermanagement.service.contract.IAccountService;
 
-
 import java.util.Map;
 
 import com.evdealer.evdealermanagement.utils.VietNamDatetime;
@@ -32,7 +31,6 @@ public class ProfileService implements IAccountService {
     private final AccountRepository accountRepository;
     private final Cloudinary cloudinary;
 
-
     @Override
     public AccountProfileResponse getProfile(String username) {
         Account account = accountRepository.findByUsername(username)
@@ -42,39 +40,70 @@ public class ProfileService implements IAccountService {
 
     @Override
     public AccountProfileResponse updateProfile(String username, AccountUpdateRequest accountRequest) {
+        log.info("Starting updateProfile for username='{}'", username);
 
         Account existingAccount = accountRepository.findByUsername(username)
-                .orElseThrow(() -> new AppException(ErrorCode.RESOURCE_NOT_FOUND, "User not found"));
+                .orElseThrow(() -> {
+                    log.warn("User not found by username='{}'", username);
+                    return new AppException(ErrorCode.RESOURCE_NOT_FOUND, "User not found");
+                });
+        log.debug("Loaded account: id={}, email='{}', phone='{}'",
+                existingAccount.getId(), existingAccount.getEmail(), existingAccount.getPhone());
 
         // Validate phone duplicate - sử dụng StringUtils.hasText
         if (StringUtils.hasText(accountRequest.getPhone())) {
             String trimmedPhone = trimToNull(accountRequest.getPhone());
+            log.debug("Validating phone duplication: raw='{}', trimmed='{}'",
+                    accountRequest.getPhone(), trimmedPhone);
+
             if (trimmedPhone != null &&
                     accountRepository.existsByPhoneAndIdNot(trimmedPhone, existingAccount.getId())) {
+                log.warn("Duplicate phone detected for phone='{}' (other user exists)", trimmedPhone);
                 throw new AppException(ErrorCode.DUPLICATE_RESOURCE, "Phone already used");
             }
+        } else {
+            log.debug("No phone provided to update");
         }
 
         // Validate email duplicate
         if (StringUtils.hasText(accountRequest.getEmail())) {
             String trimmedEmail = trimToNull(accountRequest.getEmail());
+            log.debug("Validating email duplication: raw='{}', trimmed='{}'",
+                    accountRequest.getEmail(), trimmedEmail);
+
             if (trimmedEmail != null &&
                     accountRepository.existsByEmailAndIdNot(trimmedEmail, existingAccount.getId())) {
+                log.warn("Duplicate email detected for email='{}' (other user exists)", trimmedEmail);
                 throw new AppException(ErrorCode.DUPLICATE_RESOURCE, "Email already used");
             }
+        } else {
+            log.debug("No email provided to update");
         }
 
+        // Map fields từ request sang entity
+        log.debug("Applying AccountMapper.updateAccountFromRequest");
         AccountMapper.updateAccountFromRequest(accountRequest, existingAccount);
-        //Chỉ update avatar nếu có file
-        if(accountRequest.getAvatarUrl() != null && !accountRequest.getAvatarUrl().isEmpty()) {
+
+        // Chỉ update avatar nếu có file/url
+        if (accountRequest.getAvatarUrl() != null && !accountRequest.getAvatarUrl().isEmpty()) {
+            log.info("Updating avatar for accountId={}", existingAccount.getId());
             validateAvatar(accountRequest.getAvatarUrl());
             String avatarUrl = uploadAvatarToCloudinary(accountRequest.getAvatarUrl(), existingAccount.getId());
             existingAccount.setAvatarUrl(avatarUrl);
+            log.debug("Avatar updated successfully: {}", avatarUrl);
+        } else {
+            log.debug("No avatar provided to update");
         }
+
         existingAccount.setUpdatedAt(VietNamDatetime.nowVietNam());
+        log.debug("Set updatedAt for accountId={}", existingAccount.getId());
 
         Account saved = accountRepository.save(existingAccount);
-        return AccountMapper.mapToAccountProfileResponse(saved);
+        log.info("Account updated successfully: id={}, username='{}'", saved.getId(), username);
+
+        AccountProfileResponse resp = AccountMapper.mapToAccountProfileResponse(saved);
+        log.debug("Returning AccountProfileResponse: {}", resp);
+        return resp;
     }
 
     @Override
@@ -90,12 +119,10 @@ public class ProfileService implements IAccountService {
             Map<String, Object> uploaded = (Map<String, Object>) cloudinary.uploader().upload(
                     avatar.getBytes(),
                     com.cloudinary.utils.ObjectUtils.asMap(
-                            "folder", "eco-green/avatars/" + accountId,  // tách thư mục riêng
-                            "public_id", "avatar_" + accountId,          // để sau này update thì ghi đè
+                            "folder", "eco-green/avatars/" + accountId, // tách thư mục riêng
+                            "public_id", "avatar_" + accountId, // để sau này update thì ghi đè
                             "overwrite", true,
-                            "resource_type", "image"
-                    )
-            );
+                            "resource_type", "image"));
             return (String) uploaded.get("secure_url");
         } catch (Exception e) {
             log.error("Cloudinary upload avatar error: {}", e.getMessage(), e);
@@ -103,13 +130,12 @@ public class ProfileService implements IAccountService {
         }
     }
 
-
     private void validateAvatar(MultipartFile avatar) {
         if (avatar == null || avatar.isEmpty()) {
             throw new AppException(ErrorCode.MIN_1_IMAGE); // có thể tạo ErrorCode riêng như AVATAR_REQUIRED
         }
 
-        //5 MB
+        // 5 MB
         long maxBytes = 5L * 1024 * 1024;
         if (avatar.getSize() > maxBytes) {
             throw new AppException(ErrorCode.IMAGE_TOO_LARGE);

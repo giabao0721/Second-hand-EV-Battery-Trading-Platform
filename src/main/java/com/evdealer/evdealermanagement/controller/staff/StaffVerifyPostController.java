@@ -1,5 +1,6 @@
 package com.evdealer.evdealermanagement.controller.staff;
 
+import com.evdealer.evdealermanagement.dto.common.PageResponse;
 import com.evdealer.evdealermanagement.dto.post.verification.PostVerifyRequest;
 import com.evdealer.evdealermanagement.dto.post.verification.PostVerifyResponse;
 import com.evdealer.evdealermanagement.entity.product.Product;
@@ -9,10 +10,9 @@ import com.evdealer.evdealermanagement.service.implement.StaffService;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -43,25 +43,17 @@ public class StaffVerifyPostController {
 
     @GetMapping("/pending/review")
     @PreAuthorize("hasAnyRole('STAFF', 'ADMIN')")
-    public ResponseEntity<Page<PostVerifyResponse>> getPendingPosts(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
-
-        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
-        Page<PostVerifyResponse> pendingPosts = staffService.getListVerifyPost(pageable);
-        return ResponseEntity.ok(pendingPosts);
+    public PageResponse<PostVerifyResponse> listPendingPosts(
+            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+        return staffService.listPendingPosts(pageable);
     }
 
     @GetMapping("/pending/review/type")
     @PreAuthorize("hasAnyRole('STAFF', 'ADMIN')")
-    public ResponseEntity<Page<PostVerifyResponse>> getPendingPostsByType(
+    public PageResponse<PostVerifyResponse> listPendingPostsByType(
             @RequestParam(name = "type", required = false) Product.ProductType type,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
-
-        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
-        Page<PostVerifyResponse> pendingPosts = staffService.getListVerifyPostByType(type, pageable);
-        return ResponseEntity.ok(pendingPosts);
+            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+        return staffService.listPendingPostsByType(type, pageable);
     }
 
     @PatchMapping("/reports/{reportId}/status")

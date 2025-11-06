@@ -15,7 +15,6 @@ import com.evdealer.evdealermanagement.service.implement.ProductRenewalService;
 import com.evdealer.evdealermanagement.service.implement.VnpayService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -24,7 +23,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
-import java.math.BigDecimal;
 import java.util.Map;
 
 @RestController
@@ -64,17 +62,14 @@ public class VnpayController {
     }
 
     @GetMapping("/return")
-    public void vnpayReturn(@RequestParam Map<String, String> params, HttpServletResponse response, HttpServletRequest request) throws IOException {
+    public void vnpayReturn(@RequestParam Map<String, String> params, HttpServletResponse response,
+            HttpServletRequest request) throws IOException {
         log.info("🔔 VNPay return callback received");
         log.info("📦 Params: {}", params);
-
 
         String rawQuery = request.getQueryString();
         String paymentId = params.get("vnp_TxnRef");
         String responseCode = params.get("vnp_ResponseCode");
-//        BigDecimal amount = BigDecimal.valueOf(Long.parseLong(params.get("vnp_Amount")));
-//        String vnpTmnCode = params.get("vnp_TmnCode");
-//        String vnpCreateDate = params.get("vnp_CreateDate");
 
         try {
             if (paymentId == null || paymentId.isBlank()) {
@@ -118,8 +113,9 @@ public class VnpayController {
                 success = false;
             }
 
-            // 4) Redirect về frontend - Sửa: Thay /payment/return thành /payment/vnpay-return
-            String redirectUrl = frontendUrl+"/payment/vnpay-return" +(rawQuery != null ? ("?" + rawQuery) : "");
+            // 4) Redirect về frontend - Sửa: Thay /payment/return thành
+            // /payment/vnpay-return
+            String redirectUrl = frontendUrl + "/payment/vnpay-return" + (rawQuery != null ? ("?" + rawQuery) : "");
 
             log.info("🔄 Redirecting to: {}", redirectUrl);
             response.sendRedirect(redirectUrl);
@@ -200,7 +196,8 @@ public class VnpayController {
     }
 
     @PostMapping("/verify")
-    public ResponseEntity<VnpayVerifyResponse> verify(@RequestBody VnpayVerifyRequest request, HttpServletRequest httpReq) {
+    public ResponseEntity<VnpayVerifyResponse> verify(@RequestBody VnpayVerifyRequest request,
+            HttpServletRequest httpReq) {
         String clientIp = httpReq.getRemoteAddr();
         return ResponseEntity.ok(vnpayService.verifyReturn(request.getProductId(), request.getRawQuery(), clientIp));
     }

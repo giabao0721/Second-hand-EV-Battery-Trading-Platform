@@ -26,7 +26,11 @@ import com.evdealer.evdealermanagement.entity.product.ProductImages;
 import com.evdealer.evdealermanagement.entity.vehicle.*;
 import com.evdealer.evdealermanagement.exceptions.AppException;
 import com.evdealer.evdealermanagement.exceptions.ErrorCode;
+import com.evdealer.evdealermanagement.mapper.vehicle.CreateVehicleMapper;
+import com.evdealer.evdealermanagement.mapper.vehicle.VehicleBrandsMapper;
 import com.evdealer.evdealermanagement.mapper.vehicle.VehicleMapper;
+import com.evdealer.evdealermanagement.mapper.vehicle.VehicleModelMapper;
+import com.evdealer.evdealermanagement.mapper.vehicle.VehicleVersionMapper;
 import com.evdealer.evdealermanagement.repository.*;
 import com.evdealer.evdealermanagement.utils.VietNamDatetime;
 import lombok.RequiredArgsConstructor;
@@ -327,11 +331,7 @@ public class VehicleService {
         vehicleBrandsRepository.save(entity);
 
         // 6) Trả DTO
-        return VehicleBrandsResponse.builder()
-                .brandId(entity.getId())
-                .brandName(entity.getName())
-                .logoUrl(entity.getLogoUrl())
-                .build();
+        return VehicleBrandsMapper.mapToVehicleBrandsResponse(entity);
     }
 
     private void validateLogo(MultipartFile image) {
@@ -573,34 +573,46 @@ public class VehicleService {
     }
 
     public CreateVehicleResponse createBrandModelVersion(CreateVehicleRequest req, MultipartFile logoFile) {
+        log.info("Starting createBrandModelVersion for brand='{}', model='{}', version='{}', categoryId={}",
+                req.getBrandName(), req.getModelName(), req.getVersionName(), req.getVehicleCategoryId());
+
         // Validate vehicle type
         VehicleCategories cate = vehicleCategoryRepository.findById(req.getVehicleCategoryId())
-                .orElseThrow(() -> new AppException(ErrorCode.VEHICLE_CATEGORY_NOT_FOUND));
+                .orElseThrow(() -> {
+                    log.warn("Vehicle category not found: {}", req.getVehicleCategoryId());
+                    return new AppException(ErrorCode.VEHICLE_CATEGORY_NOT_FOUND);
+                });
+        log.debug("Validated vehicle category: {}", cate.getName());
 
         String brandName = req.getBrandName() == null ? null : req.getBrandName().trim();
         if (brandName == null || brandName.isBlank()) {
+            log.warn("Brand name is missing or blank");
             throw new AppException(ErrorCode.BRAND_NOT_FOUND);
         }
+
         String modelName = req.getModelName() == null ? null : req.getModelName().trim();
         String versionName = req.getVersionName() == null ? null : req.getVersionName().trim();
         if (modelName == null || modelName.isBlank()) {
+            log.warn("Model name is missing or blank");
             throw new AppException(ErrorCode.MODEL_NAME_REQUIRED);
         }
         if (versionName == null || versionName.isBlank()) {
+            log.warn("Version name is missing or blank");
             throw new AppException(ErrorCode.VERSION_NAME_REQUIRED);
         }
 
+        log.debug("Checking existing brand: {}", brandName);
         Optional<VehicleBrands> existedBrandOpt = vehicleBrandsRepository.findByNameIgnoreCase(brandName);
 
         final VehicleBrands brand;
         final boolean brandCreated;
 
         if (existedBrandOpt.isPresent()) {
-            // Đã tồn tại -> dùng lại
             brand = existedBrandOpt.get();
             brandCreated = false;
+            log.info("Brand '{}' already exists with ID={}", brandName, brand.getId());
         } else {
-            // Tạo mới -> cần logoFile
+            log.info("Brand '{}' not found, creating new one...", brandName);
             validateLogo(logoFile);
 
             Map<String, Object> uploaded;
@@ -614,6 +626,7 @@ public class VehicleService {
                                 "overwrite", true,
                                 "unique_filename", true));
                 uploaded = up;
+                log.debug("Uploaded logo to Cloudinary successfully: {}", uploaded.get("secure_url"));
             } catch (Exception e) {
                 log.error("Cloudinary upload error: {}", e.getMessage(), e);
                 throw new AppException(ErrorCode.IMAGE_UPLOAD_FAILED);
@@ -626,9 +639,12 @@ public class VehicleService {
             entity.setLogoUrl(secureUrl);
             brand = vehicleBrandsRepository.save(entity);
             brandCreated = true;
+            log.info("Created new brand '{}' with ID={} and logo={}", brandName, brand.getId(), secureUrl);
         }
 
         // 2) Model: get or create (brand + vehicleType)
+        log.debug("Checking existing model '{}' for brand='{}' and vehicleTypeId={}", modelName, brand.getName(),
+                cate.getId());
         final Model model;
         final boolean modelCreated;
         Optional<Model> modelOpt = vmRepository.findByNameIgnoreCaseAndBrandIdAndVehicleTypeId(
@@ -637,6 +653,7 @@ public class VehicleService {
         if (modelOpt.isPresent()) {
             model = modelOpt.get();
             modelCreated = false;
+            log.info("Model '{}' already exists with ID={}", modelName, model.getId());
         } else {
             Model m = new Model();
             m.setName(modelName);
@@ -644,9 +661,11 @@ public class VehicleService {
             m.setVehicleType(cate);
             model = vmRepository.save(m);
             modelCreated = true;
+            log.info("Created new model '{}' with ID={}", modelName, model.getId());
         }
 
         // 3) Version: get or create (by model)
+        log.debug("Checking existing version '{}' for model='{}'", versionName, model.getName());
         final ModelVersion version;
         final boolean versionCreated;
         Optional<ModelVersion> verOpt = vmvRepository.findByNameIgnoreCaseAndModelId(
@@ -655,140 +674,230 @@ public class VehicleService {
         if (verOpt.isPresent()) {
             version = verOpt.get();
             versionCreated = false;
+            log.info("Version '{}' already exists with ID={}", versionName, version.getId());
         } else {
             ModelVersion v = new ModelVersion();
             v.setName(versionName);
             v.setModel(model);
             version = vmvRepository.save(v);
             versionCreated = true;
+            log.info("Created new version '{}' with ID={}", versionName, version.getId());
         }
-        CreateVehicleResponse resp = new CreateVehicleResponse();
-        resp.setBrandId(brand.getId());
-        resp.setModelId(model.getId());
-        resp.setVersionId(version.getId());
-        resp.setBrandCreated(brandCreated);
-        resp.setModelCreated(modelCreated);
-        resp.setVersionCreated(versionCreated);
-        return resp;
+
+        log.info("Successfully created/linked brand={}, model={}, version={}", brandName, modelName, versionName);
+        log.debug("Flags: brandCreated={}, modelCreated={}, versionCreated={}", brandCreated, modelCreated,
+                versionCreated);
+
+        return CreateVehicleMapper.mapToCreateVehicleResponse(brand, model, version, brandCreated, modelCreated,
+                versionCreated);
     }
 
     @Transactional
     public VehicleBrandsResponse updateBrand(String brandId, String brandName, MultipartFile logoFile) {
+        log.info("Starting updateBrand with brandId={}, brandName='{}', hasLogoFile={}", brandId, brandName,
+                logoFile != null);
+
         VehicleBrands brand = vehicleBrandsRepository.findById(brandId)
-                .orElseThrow(() -> new AppException(ErrorCode.BRAND_NOT_FOUND));
+                .orElseThrow(() -> {
+                    log.warn("Brand not found with id={}", brandId);
+                    return new AppException(ErrorCode.BRAND_NOT_FOUND);
+                });
 
         boolean changed = false;
 
         // đổi tên (nếu có)
         if (brandName != null) {
             String newName = normalize(brandName);
-            if (newName.isBlank())
+            log.debug("Requested new brand name='{}' (normalized='{}')", brandName, newName);
+
+            if (newName.isBlank()) {
+                log.warn("Brand name is blank after normalization");
                 throw new AppException(ErrorCode.BRAND_NAME_REQUIRED);
+            }
 
             // chống trùng tên với brand khác
             vehicleBrandsRepository.findByNameIgnoreCase(newName).ifPresent(other -> {
                 if (!other.getId().equals(brand.getId())) {
+                    log.warn("Duplicate brand name '{}' found (existing brandId={})", newName, other.getId());
                     throw new AppException(ErrorCode.BRAND_EXISTS);
                 }
             });
 
             if (!newName.equalsIgnoreCase(brand.getName())) {
+                log.info("Updating brand name from '{}' to '{}'", brand.getName(), newName);
                 brand.setName(newName);
                 changed = true;
+            } else {
+                log.debug("Brand name '{}' unchanged", brand.getName());
             }
+        } else {
+            log.debug("No brandName provided for update");
         }
 
         // đổi logo (nếu có)
         if (logoFile != null && !logoFile.isEmpty()) {
+            log.info("Updating brand logo for brandId={}", brandId);
             validateLogo(logoFile);
-            String url = uploadToCloudinary(logoFile, "eco-green/brands/vehicle");
-            brand.setLogoUrl(url);
-            changed = true;
+            try {
+                String url = uploadToCloudinary(logoFile, "eco-green/brands/vehicle");
+                brand.setLogoUrl(url);
+                changed = true;
+                log.debug("Uploaded new logo successfully: {}", url);
+            } catch (Exception e) {
+                log.error("Logo upload failed for brandId={} - {}", brandId, e.getMessage(), e);
+                throw e; // vẫn ném lại lỗi gốc
+            }
+        } else {
+            log.debug("No logo file provided for update");
         }
 
-        if (changed)
+        if (changed) {
             vehicleBrandsRepository.save(brand);
+            log.info("Brand updated successfully: id={}, name='{}', logo='{}'", brand.getId(), brand.getName(),
+                    brand.getLogoUrl());
+        } else {
+            log.info("No changes detected for brandId={}", brandId);
+        }
 
-        return VehicleBrandsResponse.builder()
-                .brandId(brand.getId())
-                .brandName(brand.getName())
-                .logoUrl(brand.getLogoUrl())
-                .created(false)
-                .build();
+        VehicleBrandsResponse response = VehicleBrandsMapper.mapToVehicleBrandsResponse(brand);
+        log.debug("Returning VehicleBrandsResponse: {}", response);
+        return response;
     }
 
     @Transactional
     public UpdateVehicleModelResponse updateModel(String modelId, UpdateModelRequest req) {
+        log.info("Starting updateModel: modelId={}, requestedName='{}', requestedVehicleCategoryId={}",
+                modelId, req != null ? req.getModelName() : null, req != null ? req.getVehicleCategoryId() : null);
+
         Model model = vmRepository.findById(modelId)
-                .orElseThrow(() -> new AppException(ErrorCode.MODEL_NOT_FOUND));
+                .orElseThrow(() -> {
+                    log.warn("MODEL_NOT_FOUND for id={}", modelId);
+                    return new AppException(ErrorCode.MODEL_NOT_FOUND);
+                });
+        log.debug("Loaded model: id={}, name='{}', brandId={}, currentVehicleType={}",
+                model.getId(),
+                model.getName(),
+                model.getBrand() != null ? model.getBrand().getId() : null,
+                model.getVehicleType());
 
         VehicleCategories cate = vehicleCategoryRepository.findById(req.getVehicleCategoryId())
-                .orElseThrow(() -> new AppException(ErrorCode.VEHICLE_CATEGORY_NOT_FOUND));
+                .orElseThrow(() -> {
+                    log.warn("VEHICLE_CATEGORY_NOT_FOUND for id={}", req.getVehicleCategoryId());
+                    return new AppException(ErrorCode.VEHICLE_CATEGORY_NOT_FOUND);
+                });
+        log.debug("Resolved target vehicle category: id={}, name='{}'", cate.getId(), cate.getName());
 
         String newName = normalize(req.getModelName());
-        if (newName.isBlank())
+        log.debug("Normalized model name: input='{}' -> normalized='{}'", req.getModelName(), newName);
+        if (newName.isBlank()) {
+            log.warn("MODEL_NAME_REQUIRED: normalized name is blank");
             throw new AppException(ErrorCode.MODEL_NAME_REQUIRED);
+        }
 
         boolean nameChanged = !newName.equalsIgnoreCase(model.getName());
         boolean categoryChanged = !cate.getId().equals(model.getVehicleType());
+        log.debug(
+                "Change detection -> nameChanged={}, categoryChanged={}, (compare: targetCateId={}, currentVehicleType={})",
+                nameChanged, categoryChanged, cate.getId(), model.getVehicleType());
 
-        // Nếu đổi tên hoặc category -> phải check trùng theo (brand_id, category_id,
-        // name)
+        // Nếu đổi tên hoặc category -> check trùng theo (brand_id, category_id, name)
         if (nameChanged || categoryChanged) {
+            log.debug("Checking conflict: name='{}', brandId={}, vehicleTypeId={}",
+                    newName,
+                    model.getBrand() != null ? model.getBrand().getId() : null,
+                    cate.getId());
+
             vmRepository.findByNameIgnoreCaseAndBrandIdAndVehicleTypeId(
                     newName, model.getBrand().getId(), cate.getId())
                     .ifPresent(conflict -> {
                         if (!conflict.getId().equals(model.getId())) {
+                            log.warn(
+                                    "MODEL_EXISTS conflict: existingModelId={}, name='{}', brandId={}, vehicleTypeId={}",
+                                    conflict.getId(), newName, model.getBrand().getId(), cate.getId());
                             throw new AppException(ErrorCode.MODEL_EXISTS);
                         }
                     });
+        } else {
+            log.debug("No potential conflict check needed (no changing attributes)");
         }
 
-        if (nameChanged)
+        if (nameChanged) {
+            log.info("Updating model name: '{}' -> '{}'", model.getName(), newName);
             model.setName(newName);
-        if (categoryChanged)
+        }
+        if (categoryChanged) {
+            log.info("Updating model vehicleType: current={}, targetCategoryId={}", model.getVehicleType(),
+                    cate.getId());
             model.setVehicleType(cate);
-        if (nameChanged || categoryChanged)
-            vmRepository.save(model);
+        }
 
-        return UpdateVehicleModelResponse.builder()
-                .id(model.getId())
-                .name(model.getName())
-                .brandId(model.getBrand().getId())
-                .vehicleTypeId(model.getVehicleType().getId())
-                .nameChanged(nameChanged)
-                .categoryChanged(categoryChanged)
-                .build();
+        if (nameChanged || categoryChanged) {
+            vmRepository.save(model);
+            log.info("Model updated successfully: id={}, name='{}', brandId={}, vehicleType={}",
+                    model.getId(),
+                    model.getName(),
+                    model.getBrand() != null ? model.getBrand().getId() : null,
+                    model.getVehicleType());
+        } else {
+            log.info("No changes detected for modelId={}", modelId);
+        }
+
+        UpdateVehicleModelResponse resp = VehicleModelMapper.mapToUpdateVehicleModelResponse(model, nameChanged,
+                categoryChanged);
+        log.debug("Returning UpdateVehicleModelResponse: {}", resp);
+        return resp;
     }
 
     @Transactional
     public UpdateVehicleVersionResponse updateVersion(String versionId, UpdateVersionRequest req) {
+        log.info("Starting updateVersion: versionId={}, requestedName='{}'",
+                versionId, req != null ? req.getVersionName() : null);
+
         ModelVersion ver = vmvRepository.findById(versionId)
-                .orElseThrow(() -> new AppException(ErrorCode.VERSION_NOT_FOUND));
+                .orElseThrow(() -> {
+                    log.warn("VERSION_NOT_FOUND for id={}", versionId);
+                    return new AppException(ErrorCode.VERSION_NOT_FOUND);
+                });
+        log.debug("Loaded version: id={}, name='{}', modelId={}",
+                ver.getId(),
+                ver.getName(),
+                ver.getModel() != null ? ver.getModel().getId() : null);
 
         String newName = normalize(req.getVersionName());
-        if (newName.isBlank())
+        log.debug("Normalized version name: input='{}' -> normalized='{}'", req.getVersionName(), newName);
+        if (newName.isBlank()) {
+            log.warn("VERSION_NAME_REQUIRED: normalized name is blank");
             throw new AppException(ErrorCode.VERSION_NAME_REQUIRED);
+        }
 
         boolean nameChanged = !newName.equalsIgnoreCase(ver.getName());
+        log.debug("Name changed? {} (current='{}', new='{}')", nameChanged, ver.getName(), newName);
+
         if (nameChanged) {
-            // chống trùng trong cùng model
+            log.info("Checking for name conflict within modelId={} for version='{}'", ver.getModel().getId(), newName);
             vmvRepository.findByNameIgnoreCaseAndModelId(newName, ver.getModel().getId())
                     .ifPresent(conflict -> {
                         if (!conflict.getId().equals(ver.getId())) {
+                            log.warn("VERSION_EXISTS conflict detected: existingVersionId={}, name='{}', modelId={}",
+                                    conflict.getId(), newName, ver.getModel().getId());
                             throw new AppException(ErrorCode.VERSION_EXISTS);
                         }
                     });
+
+            log.info("Updating version name: '{}' -> '{}'", ver.getName(), newName);
             ver.setName(newName);
             vmvRepository.save(ver);
+            log.info("Version updated successfully: id={}, name='{}', modelId={}",
+                    ver.getId(), ver.getName(), ver.getModel().getId());
+        } else {
+            log.info("No changes detected for versionId={} (name unchanged)", versionId);
         }
 
-        return UpdateVehicleVersionResponse.builder()
-                .id(ver.getId())
-                .name(ver.getName())
-                .modelId(ver.getModel().getId())
-                .nameChanged(nameChanged)
-                .build();
+        UpdateVehicleVersionResponse response = VehicleVersionMapper.mapToUpdateVehicleVersionResponse(ver,
+                nameChanged);
+
+        log.debug("Returning UpdateVehicleVersionResponse: {}", response);
+        return response;
     }
 
     // --- helpers ---
