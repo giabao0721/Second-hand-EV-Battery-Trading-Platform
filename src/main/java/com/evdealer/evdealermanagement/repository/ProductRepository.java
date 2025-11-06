@@ -48,7 +48,7 @@ public interface ProductRepository extends JpaRepository<Product, String>, JpaSp
         ) ASC,
         p.createdAt DESC
 """)
-    List<Product> findTop12ByStatusOrderByCreatedAtDesc(Product.Status status, Pageable pageable);
+    List<Product> findTop120ByStatusOrderByCreatedAtDesc(Product.Status status, Pageable pageable);
 
     Optional<Product> findById(@NotNull String productId);
 

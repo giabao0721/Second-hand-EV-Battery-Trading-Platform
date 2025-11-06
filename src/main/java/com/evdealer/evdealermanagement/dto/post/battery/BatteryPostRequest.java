@@ -12,12 +12,10 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 public class BatteryPostRequest {
 
-    @NotNull(message = "Title is required")
     @NotBlank(message = "Title cannot be blank")
     @Size(max = 255, message = "Title must not exceed 255 characters")
     private String title;
 
-    @NotNull(message = "Description is required")
     @NotBlank(message = "Description cannot be blank")
     @Size(max = 10_000, message = "Description must not exceed 10,000 characters")
     private String description;
@@ -27,7 +25,6 @@ public class BatteryPostRequest {
     @Digits(integer = 15, fraction = 2, message = "Price must have at most 15 integer digits and 2 decimal places")
     private BigDecimal price;
 
-    @NotNull(message = "City is required")
     @NotBlank(message = "City cannot be blank")
     @Size(max = 255, message = "City must not exceed 255 characters")
     private String city;
@@ -43,11 +40,9 @@ public class BatteryPostRequest {
     @Size(max = 10_000, message = "Address detail must not exceed 10,000 characters")
     private String addressDetail;
 
-    @NotNull(message = "Battery type is required")
     @NotBlank(message = "Please select a battery type")
     private String batteryTypeId;
 
-    @NotNull(message = "Brand is required")
     @NotBlank(message = "Please choose the brand")
     private String brandId;
 

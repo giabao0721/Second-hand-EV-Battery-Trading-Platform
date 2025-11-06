@@ -306,9 +306,9 @@ public class ProductService implements IProductService {
             log.info("=== START getNewProducts ===");
 
             // Lấy nhiều hơn 12 để có buffer
-            List<Product> products = productRepository.findTop12ByStatusOrderByCreatedAtDesc(
+            List<Product> products = productRepository.findTop120ByStatusOrderByCreatedAtDesc(
                     Product.Status.ACTIVE,
-                    PageRequest.of(0, 20) // Lấy 20 để đảm bảo sau khi filter vẫn còn đủ
+                    PageRequest.of(0, 120) // Lấy 120 để đảm bảo sau khi filter vẫn còn đủ
             );
 
             log.info("Found {} products from DB", products.size());
@@ -323,16 +323,16 @@ public class ProductService implements IProductService {
                         .collect(Collectors.toList());
             }
 
-            // Chỉ lấy 12 cái đầu
+            // Chỉ lấy 120 cái đầu
             result = result.stream()
-                    .limit(12)
+                    .limit(120)
                     .collect(Collectors.toList());
 
             log.info("=== END getNewProducts: {} products (requested 12) ===", result.size());
 
             // Warning nếu không đủ
-            if (result.size() < 12) {
-                log.warn("Only found {} products, less than requested 12", result.size());
+            if (result.size() < 120) {
+                log.warn("Only found {} products, less than requested 120", result.size());
             }
 
             return result;

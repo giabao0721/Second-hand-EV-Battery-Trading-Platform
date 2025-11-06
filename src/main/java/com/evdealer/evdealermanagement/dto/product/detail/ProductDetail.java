@@ -54,6 +54,8 @@ public class ProductDetail {
 
     private Boolean isWishlisted;
 
+    private String sellerAvatarUrl;
+
     public static ProductDetail fromEntity(Product product) {
         if (product == null)
             return null;
@@ -129,6 +131,11 @@ public class ProductDetail {
                 .brandName(brandName)
                 .batteryType(batteryType)
                 .isHot(product.getIsHot() != null ? product.getIsHot() : false)
+                .sellerAvatarUrl(
+                        product.getSeller() != null && product.getSeller().getAvatarUrl() != null
+                                ? product.getSeller().getAvatarUrl()
+                                : null
+                )
                 .build();
     }
 }
