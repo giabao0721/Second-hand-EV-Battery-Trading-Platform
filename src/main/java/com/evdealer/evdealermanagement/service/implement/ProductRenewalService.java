@@ -249,6 +249,7 @@ public class ProductRenewalService {
 
         if (featuredDays > 0) {
             product.setFeaturedEndAt(baseFeatured.plusDays(featuredDays));
+            product.setStartRenewalAt(nowVietNam());
         }
 
         boolean extendExpire = shouldExtendExpire(payment);
@@ -259,6 +260,8 @@ public class ProductRenewalService {
                     ? product.getExpiresAt()
                     : now;
             product.setExpiresAt(baseExpire.plusDays(30));
+            product.setStartRenewalAt(nowVietNam());
+
             log.info("Extended expiresAt by 30 days (STANDARD)");
         } else {
             log.info("⏸ Skipped extending expiresAt (PRIORITY/SPECIAL)");

@@ -75,9 +75,6 @@ public class Product extends BaseEntity {
     @Column(name = "sale_type", length = 20)
     private SaleType saleType;
 
-    @Column(name = "auction_end_time")
-    private LocalDateTime auctionEndTime;
-
     @Column(name = "posting_fee", precision = 8, scale = 2)
     private BigDecimal postingFee;
 
@@ -102,6 +99,9 @@ public class Product extends BaseEntity {
 
     @Column(name = "featured_end_at")
     private LocalDateTime featuredEndAt;
+
+    @Column(name = "start_renewal_at")
+    private LocalDateTime startRenewalAt;
 
     @OneToOne(mappedBy = "product", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private VehicleDetails vehicleDetails;
