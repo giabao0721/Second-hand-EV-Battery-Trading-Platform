@@ -69,7 +69,8 @@ public class WebSecurityConfigs {
                                 "/profile/public/**",  // 👈 phải đặt ở đây, TRƯỚC /profile/**
                                 "/api/vnpayment/**",
                                 "/api/momo/**",
-                                "/api/webhooks/eversign/document-complete"
+                                "/api/webhooks/eversign/document-complete",
+                                "/member/product/seller/**"
                         ).permitAll()
 
                         // Các endpoint yêu cầu role

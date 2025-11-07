@@ -46,7 +46,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             "/gemini/suggest-price",
             "/api/webhooks/eversign/document-complete",
             "/api/password/",
-            "/profile/public"
+            "/profile/public",
+            "/member/product/seller"
     );
 
     public JwtAuthenticationFilter(JwtService jwtService, AccountDetailsService userDetailsService, RedisService redisService) {

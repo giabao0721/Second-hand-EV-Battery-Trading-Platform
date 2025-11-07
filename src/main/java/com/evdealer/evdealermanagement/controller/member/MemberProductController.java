@@ -106,9 +106,9 @@ public class MemberProductController {
         return vehicleService.updateVehiclePost(productId, request, images, imagesMetaJson);
     }
 
-    @GetMapping("/active")
-    public PageResponse<ProductResponse> listActiveBySeller(
-            @RequestParam("sellerId") String sellerId,
+    @GetMapping("/seller/{sellerId}/products")
+    public PageResponse<ProductDetail> listActiveProductsBySeller(
+            @PathVariable("sellerId") String sellerId,
             @PageableDefault(size = 10, sort = "updatedAt", direction = Sort.Direction.DESC) Pageable pageable) {
         return productService.listActiveBySeller(sellerId, pageable);
     }
