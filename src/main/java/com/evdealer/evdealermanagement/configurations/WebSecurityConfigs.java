@@ -51,7 +51,6 @@ public class WebSecurityConfigs {
         return source;
     }
 
-
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
@@ -63,15 +62,15 @@ public class WebSecurityConfigs {
                         // Các endpoint công khai (public)
                         .requestMatchers(
                                 "/auth/**", "/oauth2/**", "/login/oauth2/**",
-                                "/vehicle/**", "/battery/**",
+                                "/vehicle/**", "/battery/**", "/public/brands",
                                 "/product/**", "/gemini/**",
                                 "/api/password/**",
-                                "/profile/public/**",  // 👈 phải đặt ở đây, TRƯỚC /profile/**
+                                "/profile/public/**", // 👈 phải đặt ở đây, TRƯỚC /profile/**
                                 "/api/vnpayment/**",
                                 "/api/momo/**",
                                 "/api/webhooks/eversign/document-complete",
-                                "/member/product/seller/**"
-                        ).permitAll()
+                                "/member/product/seller/**")
+                        .permitAll()
 
                         // Các endpoint yêu cầu role
                         .requestMatchers("/admin/**").hasRole("ADMIN")
@@ -80,8 +79,7 @@ public class WebSecurityConfigs {
                         .hasAnyRole("MEMBER", "ADMIN", "STAFF")
 
                         // Còn lại bắt buộc phải login
-                        .anyRequest().authenticated()
-                )
+                        .anyRequest().authenticated())
                 .exceptionHandling(exception -> exception
                         .authenticationEntryPoint((request, response, authException) -> {
                             response.setContentType("application/json");
@@ -94,11 +92,9 @@ public class WebSecurityConfigs {
                             res.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                             res.setContentType("application/json");
                             res.getWriter().write("{\"error\":\"" + ex.getMessage() + "\"}");
-                        })
-                )
+                        }))
                 .authenticationProvider(authenticationProvider())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
-
 
         return http.build();
     }

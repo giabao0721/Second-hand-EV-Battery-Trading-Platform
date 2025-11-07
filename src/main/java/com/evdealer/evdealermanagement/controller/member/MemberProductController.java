@@ -7,7 +7,6 @@ import com.evdealer.evdealermanagement.dto.post.battery.BatteryPostResponse;
 import com.evdealer.evdealermanagement.dto.post.vehicle.VehiclePostRequest;
 import com.evdealer.evdealermanagement.dto.post.vehicle.VehiclePostResponse;
 import com.evdealer.evdealermanagement.dto.product.detail.ProductDetail;
-import com.evdealer.evdealermanagement.dto.product.show.ProductResponse;
 import com.evdealer.evdealermanagement.dto.product.status.ProductStatusRequest;
 import com.evdealer.evdealermanagement.dto.product.status.ProductStatusResponse;
 import com.evdealer.evdealermanagement.entity.product.Product;
