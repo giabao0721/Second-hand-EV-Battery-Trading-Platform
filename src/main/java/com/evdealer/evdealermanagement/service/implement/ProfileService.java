@@ -3,6 +3,7 @@ package com.evdealer.evdealermanagement.service.implement;
 import com.cloudinary.Cloudinary;
 import com.evdealer.evdealermanagement.dto.account.profile.AccountProfileResponse;
 import com.evdealer.evdealermanagement.dto.account.profile.AccountUpdateRequest;
+import com.evdealer.evdealermanagement.dto.account.profile.ProfilePublicDto;
 import com.evdealer.evdealermanagement.entity.account.Account;
 import com.evdealer.evdealermanagement.exceptions.AppException;
 import com.evdealer.evdealermanagement.exceptions.ErrorCode;
@@ -10,6 +11,7 @@ import com.evdealer.evdealermanagement.mapper.account.AccountMapper;
 import com.evdealer.evdealermanagement.repository.AccountRepository;
 import com.evdealer.evdealermanagement.service.contract.IAccountService;
 
+import java.time.LocalDate;
 import java.util.Map;
 
 import com.evdealer.evdealermanagement.utils.VietNamDatetime;
@@ -20,6 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
+import org.yaml.snakeyaml.util.EnumUtils;
 
 import static org.apache.logging.log4j.util.Strings.trimToNull;
 
@@ -145,5 +148,31 @@ public class ProfileService implements IAccountService {
         if (!(ct.equals("image/jpeg") || ct.equals("image/png"))) {
             throw new AppException(ErrorCode.UNSUPPORTED_IMAGE_TYPE);
         }
+    }
+
+
+    public ProfilePublicDto getPublicProfile(String username){
+        Account account = accountRepository.findByUsername(username)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND, "User not found"));
+
+        if (account != null) {
+            return ProfilePublicDto.builder()
+                    .id(account.getId())
+                    .email(account.getEmail())
+                    .phone(account.getPhone())
+                    .fullName(account.getFullName())
+                    .address(account.getAddress())
+                    .dateOfBirth(account.getDateOfBirth())
+                    .gender(account.getGender())
+                    .taxCode(account.getTaxCode())
+                    .nationalId(account.getNationalId())
+                    .createdAt(LocalDate.from(account.getCreatedAt()))
+                    .updatedAt(LocalDate.from(account.getUpdatedAt()))
+                    .avatarUrl(account.getAvatarUrl())
+                    .status(account.getStatus())
+                    .role(account.getRole())
+                    .build();
+        }
+        return null;
     }
 }

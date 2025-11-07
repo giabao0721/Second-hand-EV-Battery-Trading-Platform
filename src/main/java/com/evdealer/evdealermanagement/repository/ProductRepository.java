@@ -24,30 +24,30 @@ public interface ProductRepository extends JpaRepository<Product, String>, JpaSp
     Page<Product> findTitlesByTitleContainingIgnoreCase(@Param("title") String title, Pageable pageable);
 
     @Query("""
-    SELECT p FROM Product p
-    WHERE p.status = :status
-    AND EXISTS (
-        SELECT 1 FROM PostPayment pay WHERE pay.product = p
-    )
-    ORDER BY
-        (SELECT 
-            CASE 
-                WHEN pkg.code = 'SPECIAL' THEN 0
-                WHEN pkg.code = 'PRIORITY' THEN 1
-                WHEN pkg.code = 'STANDARD' THEN 2
-                ELSE 3
-            END
-         FROM PostPayment pay2
-         JOIN pay2.postPackage pkg
-         WHERE pay2.product = p
-         AND pay2.createdAt = (
-             SELECT MAX(pp.createdAt)
-             FROM PostPayment pp
-             WHERE pp.product = p
-         )
-        ) ASC,
-        p.createdAt DESC
-""")
+                SELECT p FROM Product p
+                WHERE p.status = :status
+                AND EXISTS (
+                    SELECT 1 FROM PostPayment pay WHERE pay.product = p
+                )
+                ORDER BY
+                    (SELECT\s
+                        CASE\s
+                            WHEN pkg.code = 'SPECIAL' THEN 0
+                            WHEN pkg.code = 'PRIORITY' THEN 1
+                            WHEN pkg.code = 'STANDARD' THEN 2
+                            ELSE 3
+                        END
+                     FROM PostPayment pay2
+                     JOIN pay2.postPackage pkg
+                     WHERE pay2.product = p
+                     AND pay2.createdAt = (
+                         SELECT MAX(pp.createdAt)
+                         FROM PostPayment pp
+                         WHERE pp.product = p
+                     )
+                    ) ASC,
+                    p.createdAt DESC
+           \s""")
     List<Product> findTop120ByStatusOrderByCreatedAtDesc(Product.Status status, Pageable pageable);
 
     Optional<Product> findById(@NotNull String productId);

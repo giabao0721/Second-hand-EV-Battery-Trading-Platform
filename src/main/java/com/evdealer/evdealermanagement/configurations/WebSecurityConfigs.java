@@ -60,27 +60,27 @@ public class WebSecurityConfigs {
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/auth/**", "/oauth2/**", "/login/oauth2/**", "/vehicle/**", "/battery/**",
-                                "/product/**",
-                                "/gemini/**", "/api/password/**")
-                        .permitAll()
+                        // Các endpoint công khai (public)
+                        .requestMatchers(
+                                "/auth/**", "/oauth2/**", "/login/oauth2/**",
+                                "/vehicle/**", "/battery/**",
+                                "/product/**", "/gemini/**",
+                                "/api/password/**",
+                                "/profile/public/**",  // 👈 phải đặt ở đây, TRƯỚC /profile/**
+                                "/api/vnpayment/**",
+                                "/api/momo/**",
+                                "/api/webhooks/eversign/document-complete"
+                        ).permitAll()
+
+                        // Các endpoint yêu cầu role
                         .requestMatchers("/admin/**").hasRole("ADMIN")
                         .requestMatchers("/staff/**", "/revenue/**").hasAnyRole("STAFF", "ADMIN")
                         .requestMatchers("/member/**", "/profile/**", "/password/**")
                         .hasAnyRole("MEMBER", "ADMIN", "STAFF")
-                        .requestMatchers(
-                                "/api/vnpayment", "/api/vnpayment/return",
-                                "/api/vnpayment/vnpay_ipn",
-                                "/api/momo", "/api/momo/return", "/api/momo/ipn", "/api/webhooks/eversign/document-complete")
-                        .permitAll()
-                        .requestMatchers("battery/brands/all", "battery/types/all",
-                                "vehicle/brands/all", "vehicle/categories/all",
-                                "vehicle/models/all", "vehicle/model/versions")
-                        .permitAll()
-                        .requestMatchers("/seller-reviews/seller/**").permitAll()
-                        .requestMatchers("seller-reviews").authenticated()
-                        .requestMatchers("/api/vnpayment/verify").permitAll()
-                        .anyRequest().authenticated())
+
+                        // Còn lại bắt buộc phải login
+                        .anyRequest().authenticated()
+                )
                 .exceptionHandling(exception -> exception
                         .authenticationEntryPoint((request, response, authException) -> {
                             response.setContentType("application/json");

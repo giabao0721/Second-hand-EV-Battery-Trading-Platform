@@ -45,7 +45,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             "/api/vnpayment/ipn",
             "/gemini/suggest-price",
             "/api/webhooks/eversign/document-complete",
-            "/api/password/"
+            "/api/password/",
+            "/profile/public"
     );
 
     public JwtAuthenticationFilter(JwtService jwtService, AccountDetailsService userDetailsService, RedisService redisService) {
@@ -180,7 +181,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
      * Kiểm tra xem request có phải là public endpoint không
      */
     private boolean isPublicEndpoint(String requestPath) {
-        return PUBLIC_ENDPOINTS.stream()
-                .anyMatch(requestPath::startsWith);
+        return PUBLIC_ENDPOINTS.stream().anyMatch(publicPath ->
+                requestPath.startsWith(publicPath) ||
+                        requestPath.equals(publicPath.replaceAll("/$", "")) // chấp cả khi thiếu dấu '/'
+        );
     }
+
 }

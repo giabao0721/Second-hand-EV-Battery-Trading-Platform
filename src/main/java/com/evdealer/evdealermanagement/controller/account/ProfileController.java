@@ -2,6 +2,7 @@ package com.evdealer.evdealermanagement.controller.account;
 
 import com.evdealer.evdealermanagement.dto.account.profile.AccountProfileResponse;
 import com.evdealer.evdealermanagement.dto.account.profile.AccountUpdateRequest;
+import com.evdealer.evdealermanagement.dto.account.profile.ProfilePublicDto;
 import com.evdealer.evdealermanagement.service.implement.ProfileService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +31,11 @@ public class ProfileController {
             Authentication authentication) {
         String username = authentication.getName();
         return ResponseEntity.ok(profileService.updateProfile(username, request));
+    }
+
+    @GetMapping("/public")
+    public ResponseEntity<ProfilePublicDto> getProfilePublic(@RequestParam String username) {
+        return ResponseEntity.ok(profileService.getPublicProfile(username));
     }
 
 }
