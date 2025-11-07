@@ -7,6 +7,7 @@ import com.evdealer.evdealermanagement.dto.product.compare.ProductCompareRespons
 import com.evdealer.evdealermanagement.dto.product.compare.ProductSuggestionResponse;
 import com.evdealer.evdealermanagement.dto.product.detail.ProductDetail;
 import com.evdealer.evdealermanagement.dto.product.moderation.ProductPendingResponse;
+import com.evdealer.evdealermanagement.dto.product.show.ProductResponse;
 import com.evdealer.evdealermanagement.dto.vehicle.detail.VehicleDetailResponse;
 import com.evdealer.evdealermanagement.entity.account.Account;
 import com.evdealer.evdealermanagement.entity.battery.BatteryDetails;
@@ -69,7 +70,8 @@ public class ProductService implements IProductService {
 
             List<PostVerifyResponse> content = products.getContent().stream().map(
                     product -> {
-                        PostPayment payments = postPaymentRepository.findFirstByProductIdOrderByCreatedAtDesc(product.getId());
+                        PostPayment payments = postPaymentRepository
+                                .findFirstByProductIdOrderByCreatedAtDesc(product.getId());
                         return PostVerifyMapper.mapToPostVerifyResponse(product, payments);
                     })
                     .toList();
@@ -94,14 +96,13 @@ public class ProductService implements IProductService {
         Page<Product> products = productRepository.findAll(spec, pageable);
         log.info("products =  {}", products);
         List<PostVerifyResponse> content = products.getContent().stream().map(
-                        product -> {
-                            PostPayment payments = postPaymentRepository.findByProductId(product.getId());
-                            return PostVerifyMapper.mapToPostVerifyResponse(product, payments);
-                        })
+                product -> {
+                    PostPayment payments = postPaymentRepository.findByProductId(product.getId());
+                    return PostVerifyMapper.mapToPostVerifyResponse(product, payments);
+                })
                 .toList();
         return PageResponse.of(content, products);
     }
-
 
     @Override
     @Transactional(readOnly = true)
@@ -146,12 +147,12 @@ public class ProductService implements IProductService {
     @Override
     @Transactional(readOnly = true)
     public PageResponse<ProductDetail> getProductByName(String name,
-                                                        String city,
-                                                        BigDecimal minPrice,
-                                                        BigDecimal maxPrice,
-                                                        Integer yearFrom,
-                                                        Integer yearTo,
-                                                        Pageable pageable) {
+            String city,
+            BigDecimal minPrice,
+            BigDecimal maxPrice,
+            Integer yearFrom,
+            Integer yearTo,
+            Pageable pageable) {
 
         pageable = capPageSize(pageable);
         validateFilters(minPrice, maxPrice, yearFrom, yearTo);
@@ -170,8 +171,7 @@ public class ProductService implements IProductService {
 
         Sort sort = Sort.by(
                 Sort.Order.desc("isHot"),
-                Sort.Order.desc("createdAt")
-        );
+                Sort.Order.desc("createdAt"));
         pageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), sort);
 
         Specification<Product> spec = Specification
@@ -187,7 +187,6 @@ public class ProductService implements IProductService {
         List<ProductDetail> content = toDetailsWithWishlist(products.getContent());
 
         return PageResponse.of(content, products);
-
 
     }
 
@@ -310,7 +309,7 @@ public class ProductService implements IProductService {
             List<Product> products = productRepository.findActiveFeaturedSorted(
                     Product.Status.ACTIVE,
                     VietNamDatetime.nowVietNam(),
-                    PageRequest.of(0,120) // Lấy 120 để đảm bảo sau khi filter vẫn còn đủ
+                    PageRequest.of(0, 120) // Lấy 120 để đảm bảo sau khi filter vẫn còn đủ
             );
 
             log.info("Found {} products from DB", products.size());
@@ -504,8 +503,7 @@ public class ProductService implements IProductService {
                     accontId,
                     products,
                     ProductMapper::toDetailDto,
-                    ProductDetail::setIsWishlisted
-            );
+                    ProductDetail::setIsWishlisted);
         } catch (Exception e) {
             log.warn("Attach wishlist failed, fallback basic mapping", e);
             return products.stream().map(ProductMapper::toDetailDto).toList();
@@ -513,7 +511,7 @@ public class ProductService implements IProductService {
     }
 
     public Product.Status validateAndParseStatus(String status) {
-        if(status == null || status.isBlank()) {
+        if (status == null || status.isBlank()) {
             throw new IllegalArgumentException("status cannot be null or blank");
         }
         try {
@@ -531,7 +529,7 @@ public class ProductService implements IProductService {
         BigDecimal price = current.getPrice();
         BigDecimal difference = price.multiply(BigDecimal.valueOf(0.15));
 
-        if(current.getType() == Product.ProductType.VEHICLE) {
+        if (current.getType() == Product.ProductType.VEHICLE) {
             VehicleDetails v = vehicleDetailsRepository.findByProductId(productId)
                     .orElseThrow(() -> new AppException(ErrorCode.VEHICLE_NOT_FOUND));
 
@@ -549,12 +547,12 @@ public class ProductService implements IProductService {
                             .version(x.getVersion() != null ? x.getVersion().getName() : null)
                             .build())
                     .toList();
-        } else if(current.getType() == Product.ProductType.BATTERY) {
+        } else if (current.getType() == Product.ProductType.BATTERY) {
             BatteryDetails b = batteryDetailRepository.findByProductsId(productId)
                     .orElseThrow(() -> new AppException(ErrorCode.BATTERY_NOT_FOUND));
 
             return batteryDetailRepository.findByBatteryTypeAndPriceBetween(
-                            b.getBatteryType(), price.subtract(difference), price.add(difference))
+                    b.getBatteryType(), price.subtract(difference), price.add(difference))
                     .stream()
                     .filter(x -> !x.getProduct().getId().equals(productId))
                     .distinct()
@@ -578,11 +576,11 @@ public class ProductService implements IProductService {
         Product target = productRepository.findById(targetProductId)
                 .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
 
-        if(current.getType() != target.getType()) {
+        if (current.getType() != target.getType()) {
             throw new AppException(ErrorCode.INVALID_COMPARE);
         }
 
-        if(current.getType() == Product.ProductType.VEHICLE) {
+        if (current.getType() == Product.ProductType.VEHICLE) {
             VehicleDetailResponse currentDetail = vehicleService.getVehicleDetailsInfo(currentProductId);
             VehicleDetailResponse targetDetail = vehicleService.getVehicleDetailsInfo(targetProductId);
             return ProductCompareResponse.builder()
@@ -591,7 +589,7 @@ public class ProductService implements IProductService {
                     .currentBattery(null)
                     .targetBattery(null)
                     .build();
-        } else if(current.getType() == Product.ProductType.BATTERY) {
+        } else if (current.getType() == Product.ProductType.BATTERY) {
             BatteryDetailResponse currentDetail = batteryService.getBatteryDetail(currentProductId);
             BatteryDetailResponse targetDetail = batteryService.getBatteryDetail(targetProductId);
             return ProductCompareResponse.builder()
@@ -604,4 +602,12 @@ public class ProductService implements IProductService {
         throw new AppException(ErrorCode.INVALID_REQUEST);
     }
 
+    @Transactional(readOnly = true)
+    public PageResponse<ProductResponse> listActiveBySeller(String sellerId, Pageable pageable) {
+
+        Page<Product> page = productRepository
+                .findBySeller_IdAndStatus(sellerId, Product.Status.ACTIVE, pageable);
+
+        return PageResponse.fromPage(page, ProductMapper::mapToProductResponse);
+    }
 }

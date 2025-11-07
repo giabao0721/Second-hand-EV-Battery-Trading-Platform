@@ -22,7 +22,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
-import org.yaml.snakeyaml.util.EnumUtils;
 
 import static org.apache.logging.log4j.util.Strings.trimToNull;
 
@@ -42,7 +41,8 @@ public class ProfileService implements IAccountService {
     }
 
     @Override
-    public AccountProfileResponse updateProfile(String username, AccountUpdateRequest accountRequest, MultipartFile avatarUrl) {
+    public AccountProfileResponse updateProfile(String username, AccountUpdateRequest accountRequest,
+            MultipartFile avatarUrl) {
         Account existingAccount = accountRepository.findByUsername(username)
                 .orElseThrow(() -> {
                     log.warn("User not found by username='{}'", username);
@@ -85,8 +85,8 @@ public class ProfileService implements IAccountService {
         log.debug("Applying AccountMapper.updateAccountFromRequest");
         AccountMapper.updateAccountFromRequest(accountRequest, existingAccount);
 
-        //Chỉ update avatar nếu có file
-        if(avatarUrl != null && !avatarUrl.isEmpty()) {
+        // Chỉ update avatar nếu có file
+        if (avatarUrl != null && !avatarUrl.isEmpty()) {
             validateAvatar(avatarUrl);
             String avatar = uploadAvatarToCloudinary(avatarUrl, existingAccount.getId());
             existingAccount.setAvatarUrl(avatar);
@@ -144,8 +144,7 @@ public class ProfileService implements IAccountService {
         }
     }
 
-
-    public ProfilePublicDto getPublicProfile(String username){
+    public ProfilePublicDto getPublicProfile(String username) {
         Account account = accountRepository.findByUsername(username)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND, "User not found"));
 

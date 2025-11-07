@@ -1,20 +1,29 @@
 package com.evdealer.evdealermanagement.controller.member;
 
 import com.evdealer.evdealermanagement.dto.account.custom.CustomAccountDetails;
+import com.evdealer.evdealermanagement.dto.common.PageResponse;
 import com.evdealer.evdealermanagement.dto.post.battery.BatteryPostRequest;
 import com.evdealer.evdealermanagement.dto.post.battery.BatteryPostResponse;
 import com.evdealer.evdealermanagement.dto.post.vehicle.VehiclePostRequest;
 import com.evdealer.evdealermanagement.dto.post.vehicle.VehiclePostResponse;
 import com.evdealer.evdealermanagement.dto.product.detail.ProductDetail;
+import com.evdealer.evdealermanagement.dto.product.show.ProductResponse;
 import com.evdealer.evdealermanagement.dto.product.status.ProductStatusRequest;
 import com.evdealer.evdealermanagement.dto.product.status.ProductStatusResponse;
 import com.evdealer.evdealermanagement.entity.product.Product;
 import com.evdealer.evdealermanagement.service.implement.BatteryService;
 import com.evdealer.evdealermanagement.service.implement.MemberService;
+import com.evdealer.evdealermanagement.service.implement.ProductService;
 import com.evdealer.evdealermanagement.service.implement.VehicleService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import org.springframework.data.domain.Sort;
+
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -33,6 +42,7 @@ public class MemberProductController {
     private final MemberService memberService;
     private final BatteryService batteryService;
     private final VehicleService vehicleService;
+    private final ProductService productService;
 
     @GetMapping
     public List<ProductDetail> getProductsByStatus(
@@ -57,7 +67,7 @@ public class MemberProductController {
 
     @GetMapping("/{id}")
     public ResponseEntity<ProductDetail> getProductDetailOfMember(Authentication authentication,
-                                                                  @PathVariable("id") String productId) {
+            @PathVariable("id") String productId) {
         CustomAccountDetails customAccountDetails = (CustomAccountDetails) authentication.getPrincipal();
 
         String sellerId = customAccountDetails.getAccountId();
@@ -94,6 +104,13 @@ public class MemberProductController {
             request = new ObjectMapper().readValue(dataJson, VehiclePostRequest.class);
         }
         return vehicleService.updateVehiclePost(productId, request, images, imagesMetaJson);
+    }
+
+    @GetMapping("/active")
+    public PageResponse<ProductResponse> listActiveBySeller(
+            @RequestParam("sellerId") String sellerId,
+            @PageableDefault(size = 10, sort = "updatedAt", direction = Sort.Direction.DESC) Pageable pageable) {
+        return productService.listActiveBySeller(sellerId, pageable);
     }
 
 }

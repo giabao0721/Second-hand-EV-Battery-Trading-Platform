@@ -16,77 +16,77 @@ import java.util.Optional;
 
 @Repository
 public interface ProductRepository extends JpaRepository<Product, String>, JpaSpecificationExecutor<Product> {
-    List<Product> findByType(Product.ProductType type);
+  List<Product> findByType(Product.ProductType type);
 
-    boolean existsById(@NotNull String productId);
+  boolean existsById(@NotNull String productId);
 
-    @Query("SELECT p FROM Product p WHERE LOWER(p.title) LIKE LOWER(CONCAT('%', :title, '%'))")
-    Page<Product> findTitlesByTitleContainingIgnoreCase(@Param("title") String title, Pageable pageable);
+  @Query("SELECT p FROM Product p WHERE LOWER(p.title) LIKE LOWER(CONCAT('%', :title, '%'))")
+  Page<Product> findTitlesByTitleContainingIgnoreCase(@Param("title") String title, Pageable pageable);
 
-    @Query("""
-    SELECT p FROM Product p
-    LEFT JOIN PostPayment pay 
-        ON pay.product = p
-       AND pay.createdAt = (
-            SELECT MAX(pp.createdAt)
-            FROM PostPayment pp
-            WHERE pp.product = p
-        )
-    LEFT JOIN pay.postPackage pkg
-    WHERE p.status = :status
-      AND p.expiresAt > :nowVN
-    ORDER BY 
-      CASE 
-        WHEN p.featuredEndAt >= :nowVN THEN 0
-        ELSE 1
-      END,
-      CASE 
-        WHEN pkg.code = 'SPECIAL' THEN 0
-        WHEN pkg.code = 'PRIORITY' THEN 1
-        WHEN pkg.code = 'STANDARD' THEN 2
-        ELSE 3
-      END,
-      p.createdAt DESC
-""")
-    List<Product> findActiveFeaturedSorted(Product.Status status, LocalDateTime nowVN, Pageable pageable);
+  @Query("""
+          SELECT p FROM Product p
+          LEFT JOIN PostPayment pay
+              ON pay.product = p
+             AND pay.createdAt = (
+                  SELECT MAX(pp.createdAt)
+                  FROM PostPayment pp
+                  WHERE pp.product = p
+              )
+          LEFT JOIN pay.postPackage pkg
+          WHERE p.status = :status
+            AND p.expiresAt > :nowVN
+          ORDER BY
+            CASE
+              WHEN p.featuredEndAt >= :nowVN THEN 0
+              ELSE 1
+            END,
+            CASE
+              WHEN pkg.code = 'SPECIAL' THEN 0
+              WHEN pkg.code = 'PRIORITY' THEN 1
+              WHEN pkg.code = 'STANDARD' THEN 2
+              ELSE 3
+            END,
+            p.createdAt DESC
+      """)
+  List<Product> findActiveFeaturedSorted(Product.Status status, LocalDateTime nowVN, Pageable pageable);
 
+  Optional<Product> findById(@NotNull String productId);
 
+  List<Product> findByStatus(Product.Status status);
 
-    Optional<Product> findById(@NotNull String productId);
+  Page<Product> findByStatus(Product.Status status, Pageable pageable);
 
-    List<Product> findByStatus(Product.Status status);
+  Page<Product> findByStatusAndType(Product.Status status, Product.ProductType type, Pageable pageable);
 
-    Page<Product> findByStatus(Product.Status status, Pageable pageable);
+  @Query("SELECT p FROM Product p WHERE p.seller.id = :sellerId AND p.status = :status ORDER BY p.createdAt DESC")
+  List<Product> findBySellerAndStatus(@Param("sellerId") String sellerId, @Param("status") Product.Status status);
 
-    Page<Product> findByStatusAndType(Product.Status status, Product.ProductType type, Pageable pageable);
+  Optional<Product> findByIdAndSellerId(String id, String sellerId);
 
-    @Query("SELECT p FROM Product p WHERE p.seller.id = :sellerId AND p.status = :status ORDER BY p.createdAt DESC")
-    List<Product> findBySellerAndStatus(@Param("sellerId") String sellerId, @Param("status") Product.Status status);
+  long countBySeller_Id(String sellerId);
 
-    Optional<Product> findByIdAndSellerId(String id, String sellerId);
+  long countByStatus(Product.Status status);
 
-    long countBySeller_Id(String sellerId);
+  long countByStatusAndUpdatedAtBetween(Product.Status status, LocalDateTime start, LocalDateTime end);
 
-    long countByStatus(Product.Status status);
+  @Query("SELECT p FROM Product p WHERE p.status = :status AND p.remindBefore2Sent = false AND p.expiresAt BETWEEN :start AND :end")
+  List<Product> findExpiringBetween(@Param("status") Product.Status status, @Param("start") LocalDateTime start,
+      @Param("end") LocalDateTime end);
 
-    long countByStatusAndUpdatedAtBetween(Product.Status status, LocalDateTime start, LocalDateTime end);
+  // tìm để gửi thông báo
+  @Query("SELECT p FROM Product p " +
+      "WHERE p.expiresAt BETWEEN :start AND :end " +
+      "AND (p.remindBefore2Sent = false OR p.remindBefore2Sent IS NULL) " +
+      "AND p.status = 'ACTIVE'")
+  List<Product> findExpiringBetweenAndNotReminded(
+      @Param("start") LocalDateTime start,
+      @Param("end") LocalDateTime end);
 
-    @Query("SELECT p FROM Product p WHERE p.status = :status AND p.remindBefore2Sent = false AND p.expiresAt BETWEEN :start AND :end")
-    List<Product> findExpiringBetween(@Param("status") Product.Status status, @Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
+  // tìm để ẩn đi vì hết hạn
+  @Query("SELECT p FROM Product p " +
+      "WHERE p.expiresAt < :now " +
+      "AND p.status = 'ACTIVE'")
+  List<Product> findExpiredAndActive(@Param("now") LocalDateTime now);
 
-    // tìm để gửi thông báo
-    @Query("SELECT p FROM Product p " +
-            "WHERE p.expiresAt BETWEEN :start AND :end " +
-            "AND (p.remindBefore2Sent = false OR p.remindBefore2Sent IS NULL) " +
-            "AND p.status = 'ACTIVE'")
-    List<Product> findExpiringBetweenAndNotReminded(
-            @Param("start") LocalDateTime start,
-            @Param("end") LocalDateTime end
-    );
-
-    //tìm để ẩn đi vì hết hạn
-    @Query("SELECT p FROM Product p " +
-            "WHERE p.expiresAt < :now " +
-            "AND p.status = 'ACTIVE'")
-    List<Product> findExpiredAndActive(@Param("now") LocalDateTime now);
+  Page<Product> findBySeller_IdAndStatus(String sellerId, Product.Status status, Pageable pageable);
 }

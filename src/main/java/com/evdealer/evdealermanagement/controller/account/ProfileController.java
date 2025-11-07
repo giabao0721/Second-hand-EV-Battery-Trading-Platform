@@ -6,7 +6,6 @@ import com.evdealer.evdealermanagement.dto.account.profile.ProfilePublicDto;
 import com.evdealer.evdealermanagement.service.implement.ProfileService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -35,8 +34,7 @@ public class ProfileController {
     public ResponseEntity<AccountProfileResponse> updateProfile(
             @RequestPart(value = "data", required = false) String dataJson,
             @RequestPart(value = "avatarUrl", required = false) MultipartFile avatarUrl,
-            Authentication authentication
-    ) throws IOException {
+            Authentication authentication) throws IOException {
 
         AccountUpdateRequest request = new AccountUpdateRequest(); // tạo trống
         if (dataJson != null && !dataJson.isBlank()) {
@@ -47,8 +45,7 @@ public class ProfileController {
 
         String username = authentication.getName();
         return ResponseEntity.ok(
-                profileService.updateProfile(username, request, avatarUrl)
-        );
+                profileService.updateProfile(username, request, avatarUrl));
     }
 
     @GetMapping("/public")
