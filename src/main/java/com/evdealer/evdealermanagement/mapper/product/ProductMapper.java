@@ -3,6 +3,7 @@ package com.evdealer.evdealermanagement.mapper.product;
 import com.evdealer.evdealermanagement.dto.post.common.ProductImageResponse;
 import com.evdealer.evdealermanagement.dto.product.detail.ProductDetail;
 import com.evdealer.evdealermanagement.dto.product.detail.ProductImageDto;
+import com.evdealer.evdealermanagement.dto.product.show.ProductResponse;
 import com.evdealer.evdealermanagement.entity.battery.BatteryDetails;
 import com.evdealer.evdealermanagement.entity.product.Product;
 import com.evdealer.evdealermanagement.entity.product.ProductImages;
@@ -174,6 +175,36 @@ public class ProductMapper {
                 .district(dto.getDistrict())
                 .ward(dto.getWard())
                 .isHot(dto.getIsHot() != null ? dto.getIsHot() : false)
+                .build();
+    }
+
+    public static ProductResponse mapToProductResponse(Product p) {
+        return ProductResponse.builder()
+                .id(p.getId())
+                .title(p.getTitle())
+                .description(p.getDescription())
+                .type(p.getType())
+                .price(p.getPrice())
+                .manufactureYear(p.getManufactureYear())
+                .conditionType(p.getConditionType())
+                .sellerId(p.getSeller() != null ? p.getSeller().getId() : null)
+                .status(p.getStatus())
+                .createdAt(p.getCreatedAt())
+                .updatedAt(p.getUpdatedAt())
+                .addressDetail(p.getAddressDetail())
+                .city(p.getCity())
+                .district(p.getDistrict())
+                .ward(p.getWard())
+                .sellerPhone(p.getSellerPhone())
+                .saleType(p.getSaleType())
+                .postingFee(p.getPostingFee())
+                .rejectReason(p.getRejectReason())
+                .expiresAt(p.getExpiresAt())
+                .featuredEndAt(p.getFeaturedEndAt())
+                .startRenewalAt(p.getStartRenewalAt())
+                .approvedBy(p.getApprovedBy() != null ? p.getApprovedBy().getId() : null)
+                .isHot(p.getIsHot())
+                .remindBefore2Sent(p.isRemindBefore2Sent())
                 .build();
     }
 }

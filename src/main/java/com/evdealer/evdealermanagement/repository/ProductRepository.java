@@ -24,53 +24,51 @@ public interface ProductRepository extends JpaRepository<Product, String>, JpaSp
     Page<Product> findTitlesByTitleContainingIgnoreCase(@Param("title") String title, Pageable pageable);
 
     @Query("""
-    SELECT p FROM Product p
-    WHERE p.status = :status
-      
-      AND EXISTS (
-          SELECT 1 FROM PostPayment pay WHERE pay.product = p
-      )
-     
-      AND NOT EXISTS (
-          SELECT 1
-          FROM PostPayment pay2
-          JOIN pay2.postPackage pkg2
-          WHERE pay2.product = p
-            
-            AND pay2.createdAt = (
-                SELECT MAX(pp.createdAt)
-                FROM PostPayment pp
-                WHERE pp.product = p
-            )
-            
-            AND pkg2.code IN ('SPECIAL', 'PRIORITY')
-            
-            AND p.featuredEndAt IS NOT NULL
-            AND p.featuredEndAt < :nowVN
-      )
-    ORDER BY
-        (
-            SELECT 
-                CASE 
-                    WHEN pkg.code = 'SPECIAL' THEN 0
-                    WHEN pkg.code = 'PRIORITY' THEN 1
-                    WHEN pkg.code = 'STANDARD' THEN 2
-                    ELSE 3
-                END
-            FROM PostPayment pay2
-            JOIN pay2.postPackage pkg
-            WHERE pay2.product = p
-              AND pay2.createdAt = (
-                  SELECT MAX(pp.createdAt)
-                  FROM PostPayment pp
-                  WHERE pp.product = p
-              )
-        ) ASC,
-        p.createdAt DESC
-""")
+                SELECT p FROM Product p
+                WHERE p.status = :status
+
+                  AND EXISTS (
+                      SELECT 1 FROM PostPayment pay WHERE pay.product = p
+                  )
+
+                  AND NOT EXISTS (
+                      SELECT 1
+                      FROM PostPayment pay2
+                      JOIN pay2.postPackage pkg2
+                      WHERE pay2.product = p
+
+                        AND pay2.createdAt = (
+                            SELECT MAX(pp.createdAt)
+                            FROM PostPayment pp
+                            WHERE pp.product = p
+                        )
+
+                        AND pkg2.code IN ('SPECIAL', 'PRIORITY')
+
+                        AND p.featuredEndAt IS NOT NULL
+                        AND p.featuredEndAt < :nowVN
+                  )
+                ORDER BY
+                    (
+                        SELECT
+                            CASE
+                                WHEN pkg.code = 'SPECIAL' THEN 0
+                                WHEN pkg.code = 'PRIORITY' THEN 1
+                                WHEN pkg.code = 'STANDARD' THEN 2
+                                ELSE 3
+                            END
+                        FROM PostPayment pay2
+                        JOIN pay2.postPackage pkg
+                        WHERE pay2.product = p
+                          AND pay2.createdAt = (
+                              SELECT MAX(pp.createdAt)
+                              FROM PostPayment pp
+                              WHERE pp.product = p
+                          )
+                    ) ASC,
+                    p.createdAt DESC
+            """)
     List<Product> findActiveFeaturedSorted(Product.Status status, LocalDateTime nowVN, Pageable pageable);
-
-
 
     Optional<Product> findById(@NotNull String productId);
 
@@ -92,7 +90,8 @@ public interface ProductRepository extends JpaRepository<Product, String>, JpaSp
     long countByStatusAndUpdatedAtBetween(Product.Status status, LocalDateTime start, LocalDateTime end);
 
     @Query("SELECT p FROM Product p WHERE p.status = :status AND p.remindBefore2Sent = false AND p.expiresAt BETWEEN :start AND :end")
-    List<Product> findExpiringBetween(@Param("status") Product.Status status, @Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
+    List<Product> findExpiringBetween(@Param("status") Product.Status status, @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end);
 
     // tìm để gửi thông báo
     @Query("SELECT p FROM Product p " +
@@ -101,12 +100,13 @@ public interface ProductRepository extends JpaRepository<Product, String>, JpaSp
             "AND p.status = 'ACTIVE'")
     List<Product> findExpiringBetweenAndNotReminded(
             @Param("start") LocalDateTime start,
-            @Param("end") LocalDateTime end
-    );
+            @Param("end") LocalDateTime end);
 
-    //tìm để ẩn đi vì hết hạn
+    // tìm để ẩn đi vì hết hạn
     @Query("SELECT p FROM Product p " +
             "WHERE p.expiresAt < :now " +
             "AND p.status = 'ACTIVE'")
     List<Product> findExpiredAndActive(@Param("now") LocalDateTime now);
+
+    Page<Product> findBySeller_IdAndStatus(String sellerId, Product.Status status, Pageable pageable);
 }
