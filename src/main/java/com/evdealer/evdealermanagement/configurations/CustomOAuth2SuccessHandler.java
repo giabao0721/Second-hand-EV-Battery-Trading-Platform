@@ -35,48 +35,41 @@ public class CustomOAuth2SuccessHandler implements AuthenticationSuccessHandler 
     public void onAuthenticationSuccess(HttpServletRequest request,
                                         HttpServletResponse response,
                                         Authentication authentication) throws IOException, ServletException {
-        OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
+        // FE mặc định
+        String baseBridgeUrl = frontendUrl + "/oauth2/popup-bridge";
 
-        //xác định provider hiện tại
-        String registrationId = ((OAuth2AuthenticationToken) authentication).getAuthorizedClientRegistrationId();
-        // Process login
-        AccountLoginResponse loginResponse;
+        try {
+            OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
 
-        if("google".equalsIgnoreCase(registrationId)){
-            try {
+            // 1) xác định provider
+            String registrationId = ((OAuth2AuthenticationToken) authentication).getAuthorizedClientRegistrationId();
+            AccountLoginResponse loginResponse;
+
+            if ("google".equalsIgnoreCase(registrationId)) {
                 loginResponse = googleLoginService.processGoogleLogin(oAuth2User);
-            } catch (Exception e) {
-                throw new AppException(ErrorCode.OAUTH2_GOOGLE_PROCESS_FAILED);
-            }
-        } else if("facebook".equalsIgnoreCase(registrationId)){
-            try {
+            } else if ("facebook".equalsIgnoreCase(registrationId)) {
                 loginResponse = facebookLoginService.processFacebookLogin(oAuth2User);
-            } catch (Exception e) {
-                throw new AppException(ErrorCode.OAUTH2_FACEBOOK_PROCESS_FAILED);
+            } else {
+                // tự ném vào catch để redirect lỗi
+                throw new AppException(ErrorCode.UNSUPPORTED_OAUTH2_PROVIDER);
             }
-        } else {
-            throw new AppException(ErrorCode.UNSUPPORTED_OAUTH2_PROVIDER);
+
+            // 2) success → redirect kèm token & email
+            String token = URLEncoder.encode("Bearer " + loginResponse.getToken(), StandardCharsets.UTF_8);
+            String email = URLEncoder.encode(loginResponse.getEmail(), StandardCharsets.UTF_8);
+
+            String redirectUrl = baseBridgeUrl + "?token=" + token + "&email=" + email;
+            response.sendRedirect(redirectUrl);
+
+        } catch (Exception ex) {
+            // 3) lỗi → vẫn redirect về FE nhưng kèm error
+            String error = URLEncoder.encode("oauth_failed", StandardCharsets.UTF_8);
+            // tránh để message quá nhạy cảm
+            String message = URLEncoder.encode(ex.getMessage() != null ? ex.getMessage() : "OAuth2 login failed",
+                    StandardCharsets.UTF_8);
+
+            String redirectUrl = baseBridgeUrl + "?error=" + error + "&message=" + message;
+            response.sendRedirect(redirectUrl);
         }
-
-
-
-
-        // ====== ĐIỂM QUAN TRỌNG: redirect sang FE ======
-        String token = URLEncoder.encode(loginResponse.getToken(), StandardCharsets.UTF_8);
-        String email = URLEncoder.encode(loginResponse.getEmail(), StandardCharsets.UTF_8);
-
-        // FE tạo sẵn route /oauth2/success để hứng
-        String redirectUrl = frontendUrl + "/oauth2/success?token=" + token + "&email=" + email;
-
-        response.sendRedirect(redirectUrl);
-
-//        // Trả JSON thay vì redirect
-//        response.setContentType("application/json");
-//        response.setCharacterEncoding("UTF-8");
-//        response.getWriter().write(
-//                "{ \"token\": \"" + loginResponse.getToken() + "\", " +
-//                        "\"email\": \"" + loginResponse.getEmail() + "\" }"
-//        );
-//        response.getWriter().flush();
     }
 }
