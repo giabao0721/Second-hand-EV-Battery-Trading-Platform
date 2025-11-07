@@ -201,7 +201,6 @@ public class ProductMapper {
                 .rejectReason(p.getRejectReason())
                 .expiresAt(p.getExpiresAt())
                 .featuredEndAt(p.getFeaturedEndAt())
-                .startRenewalAt(p.getStartRenewalAt())
                 .approvedBy(p.getApprovedBy() != null ? p.getApprovedBy().getId() : null)
                 .isHot(p.getIsHot())
                 .remindBefore2Sent(p.isRemindBefore2Sent())
