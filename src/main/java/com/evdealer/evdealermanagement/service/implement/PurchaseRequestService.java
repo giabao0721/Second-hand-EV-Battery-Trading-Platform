@@ -135,18 +135,6 @@ public class PurchaseRequestService {
     }
 
     // -----------------------------
-    // 4️⃣ Seller count pending
-    // -----------------------------
-    @Transactional(readOnly = true)
-    public long countPendingSellerRequests() {
-        Account seller = userContextService.getCurrentUser()
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthorized"));
-
-        return purchaseRequestRepository.countBySellerIdAndStatus(
-                seller.getId(), PurchaseRequest.RequestStatus.PENDING);
-    }
-
-    // -----------------------------
     // 5️⃣ Xem chi tiết
     // -----------------------------
     @Transactional(readOnly = true)
@@ -182,6 +170,12 @@ public class PurchaseRequestService {
 
     private PurchaseRequestResponse handleAcceptRequest(PurchaseRequest request, String responseMessage) {
         Product product = request.getProduct();
+
+        // Kiểm tra lại product đã bị accept request khác chưa
+        if (product.getStatus() != Product.Status.ACTIVE) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Sản phẩm này đã có yêu cầu mua được chấp nhận hoặc không còn khả dụng.");
+        }
         product.setStatus(Product.Status.HIDDEN);
         productRepository.save(product);
 

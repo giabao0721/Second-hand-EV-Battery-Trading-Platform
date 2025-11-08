@@ -121,16 +121,6 @@ public class PurchaseRequestController {
     }
 
     // -----------------------------
-    // 6. Count request Pending Seller
-    // -----------------------------
-    @GetMapping("/seller/pending-count")
-    public ResponseEntity<Long> getPendingCount() {
-        log.info("Fetching pending seller requests count");
-        long count = purchaseRequestService.countPendingSellerRequests();
-        return ResponseEntity.ok(count);
-    }
-
-    // -----------------------------
     // 7. Chi tiết request
     // -----------------------------
     @GetMapping("/{id}")
