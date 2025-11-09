@@ -121,4 +121,6 @@ public interface VehicleDetailsRepository extends JpaRepository<VehicleDetails, 
                 @Param("minPrice") BigDecimal minPrice,
                 @Param("maxPrice") BigDecimal maxPrice
         );
+
+    boolean existsByBrand_Id(String brandId);
 }
