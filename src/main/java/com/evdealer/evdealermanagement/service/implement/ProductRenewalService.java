@@ -6,6 +6,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 
+import com.evdealer.evdealermanagement.utils.VietNamDatetime;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -41,11 +42,7 @@ public class ProductRenewalService {
     private final VnpayService vnpayService;
     private final MomoService momoService;
 
-    private static final ZoneId VIETNAM_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
 
-    private LocalDateTime nowVietNam() {
-        return ZonedDateTime.now(VIETNAM_ZONE).toLocalDateTime();
-    }
 
     @Transactional
     public ProductRenewalResponse renewalProduct(String productId, ProductRenewalRequest req) {
@@ -158,7 +155,7 @@ public class ProductRenewalService {
                 .paymentStatus(totalPayable.signum() == 0
                         ? PostPayment.PaymentStatus.COMPLETED
                         : PostPayment.PaymentStatus.PENDING)
-                .createdAt(nowVietNam())
+                .createdAt(VietNamDatetime.nowVietNam())
                 .build();
 
         postPaymentRepository.save(payment);
@@ -232,7 +229,8 @@ public class ProductRenewalService {
                 ? payment.getAmount()
                 : product.getPostingFee().add(payment.getAmount()));
 
-        LocalDateTime now = nowVietNam();
+        LocalDateTime now = VietNamDatetime.nowVietNam();
+
         int featuredDays = 0;
 
         // Nếu có option → cộng thêm ngày featured
@@ -275,7 +273,7 @@ public class ProductRenewalService {
         productRepository.save(product);
 
         log.info("""
-                    Payment COMPLETED:
+                   Payment COMPLETED:
                  - Product: {}
                  - New Status: {}
                  - Expires At: {}
@@ -293,5 +291,4 @@ public class ProductRenewalService {
             return false;
         return "STANDARD".equalsIgnoreCase(pkg.getCode());
     }
-
 }

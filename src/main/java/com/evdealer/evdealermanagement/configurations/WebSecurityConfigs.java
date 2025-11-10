@@ -40,6 +40,8 @@ public class WebSecurityConfigs {
                 "http://localhost:5175",
                 "http://localhost:5185",
                 "http://localhost:4173",
+                "http://127.0.0.1:5500",
+                "https://eco-green-p80o.onrender.com",
                 "api-eco-green-be.huanops.com", "https://d3k8h5w5waqdh2.cloudfront.net"));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         config.setAllowedHeaders(List.of("*"));
@@ -62,6 +64,7 @@ public class WebSecurityConfigs {
                 .authorizeHttpRequests(auth -> auth
                         // Các endpoint công khai (public)
                         .requestMatchers(
+                                "/ws-notifications/**",
                                 "/auth/**", "/oauth2/**", "/login/oauth2/**",
                                 "/vehicle/**", "/battery/**",
                                 "/product/**", "/gemini/**",

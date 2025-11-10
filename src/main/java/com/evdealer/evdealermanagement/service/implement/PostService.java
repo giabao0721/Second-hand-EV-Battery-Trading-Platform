@@ -103,7 +103,6 @@ public class PostService implements IProductPostService {
                 .voltageV(bd.getVoltageV())
                 .images(imageDtos)
                 .build();
-
     }
 
     @Override

@@ -20,6 +20,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableScheduling
 public class EvDealerManagementSystemApplication {
 
+
 	public static void main(String[] args) {
 		// Load environment variables từ .env file (chỉ cho local dev)
 		loadEnvironmentVariables();
