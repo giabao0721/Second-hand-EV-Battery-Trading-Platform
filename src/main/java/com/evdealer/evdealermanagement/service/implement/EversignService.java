@@ -302,29 +302,22 @@ public class EversignService {
                 // ✅ Eversign trả về "completed_time" (Unix timestamp)
                 Object completedTimeObj = doc.get("completed_time");
 
+
                 if (completedTimeObj != null) {
-                    try {
-                        long timestamp;
+                    long timestamp = Long.parseLong(String.valueOf(completedTimeObj));
 
-                        // Handle cả String và Number
-                        if (completedTimeObj instanceof Number) {
-                            timestamp = ((Number) completedTimeObj).longValue();
-                        } else {
-                            timestamp = Long.parseLong(String.valueOf(completedTimeObj));
-                        }
-
-                        // ✅ Convert từ UTC → giờ Việt Nam (Asia/Ho_Chi_Minh)
-                        Instant utcInstant = Instant.ofEpochSecond(timestamp);
-                        LocalDateTime signedTimeVn = LocalDateTime.ofInstant(utcInstant, VIETNAM_ZONE);
-
-                        log.info("✅ [Eversign] completed_time UTC={} → VN={}", utcInstant, signedTimeVn);
-
-                        return signedTimeVn;
-
-                    } catch (NumberFormatException e) {
-                        log.warn("⚠️ Không thể parse completed_time: {}", completedTimeObj);
+                    // 🧩 Nếu timestamp > 1_000_000_000_000 (12 chữ số) thì là milliseconds
+                    if (timestamp > 1_000_000_000_000L) {
+                        timestamp = timestamp / 1000;
                     }
-                } else {
+
+                    Instant utcInstant = Instant.ofEpochSecond(timestamp);
+                    LocalDateTime signedTimeVn = LocalDateTime.ofInstant(utcInstant, VIETNAM_ZONE);
+
+                    log.info("✅ [Eversign] UTC={} → VN={} (timestamp={})", utcInstant, signedTimeVn, timestamp);
+                    return signedTimeVn;
+                }
+                else {
                     log.warn("⚠️ Eversign không trả về completed_time cho document: {}", documentHash);
                 }
             } else {
