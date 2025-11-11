@@ -172,7 +172,7 @@ public class ProductService implements IProductService {
 
         Sort sort = Sort.by(
                 Sort.Order.desc("isHot"),
-                Sort.Order.desc("createdAt"));
+                Sort.Order.desc("updateAt"));
         pageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), sort);
 
         Specification<Product> spec = Specification
