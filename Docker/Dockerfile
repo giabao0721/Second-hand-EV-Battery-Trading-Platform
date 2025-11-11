@@ -10,7 +10,7 @@ COPY .mvn .mvn
 COPY pom.xml .
 
 # Ensure mvnw is executable and pre-fetch dependencies
-RUN chmod +x mvnw && ./mvnw dependency:go-offline -B || true
+RUN mvn clean package -DskipTests -B
 
 # Copy source code
 COPY src ./src
