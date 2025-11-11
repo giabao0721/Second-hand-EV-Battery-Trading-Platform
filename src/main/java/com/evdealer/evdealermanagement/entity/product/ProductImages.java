@@ -1,8 +1,10 @@
 package com.evdealer.evdealermanagement.entity.product;
 
 import com.evdealer.evdealermanagement.entity.BaseEntity;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.*;
+import net.minidev.json.annotate.JsonIgnore;
 
 @Entity
 @Table(name = "product_images")
@@ -26,6 +28,7 @@ public class ProductImages extends BaseEntity {
     //  Nhiều image thuộc về 1 product
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "product_id", nullable = false)
+    @JsonBackReference
     private Product product;
 
     private Integer width;

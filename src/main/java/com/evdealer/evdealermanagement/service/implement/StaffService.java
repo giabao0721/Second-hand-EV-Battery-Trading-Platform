@@ -37,6 +37,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.stream.Collectors;
+
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -173,7 +174,12 @@ public class StaffService {
                 savedProduct.getExpiresAt(),
                 savedProduct.getIsHot());
 
-        PostVerifyResponse response = PostVerifyMapper.mapToPostVerifyResponse(savedProduct, payment);
+        // FIX LAZY INITIALIZATION EXCEPTION
+        if (savedProduct.getImages() != null) {
+            savedProduct.getImages().size();
+        }
+
+        PostVerifyResponse response = PostVerifyMapper.toResponse(savedProduct, payment);
         log.debug("Returning PostVerifyResponse: {}", response);
 
         return response;
@@ -246,8 +252,13 @@ public class StaffService {
         log.info("Product rejected successfully: id={}, status={}, reason='{}'",
                 savedProduct.getId(), savedProduct.getStatus(), rejectReason);
 
+        // FIX LAZY INITIALIZATION EXCEPTION
+        if (savedProduct.getImages() != null) {
+            savedProduct.getImages().size();
+        }
+
         // Trả response
-        PostVerifyResponse response = PostVerifyMapper.mapToPostVerifyResponse(savedProduct, payment);
+        PostVerifyResponse response = PostVerifyMapper.toResponse(savedProduct, payment);
         log.debug("Returning PostVerifyResponse: {}", response);
 
         return response;
@@ -255,17 +266,19 @@ public class StaffService {
 
     // Generate và Lưu thông số kỹ thuật
     private void generateAndSaveVehicleSpecs(Product product) {
-        // Lấy VehicleDetails
+        // 1. Kiểm tra NullPointerException: details có thể là null
         VehicleDetails details = vehicleDetailsRepository.findByProductId(product.getId()).orElse(null);
-        ModelVersion version = details.getVersion();
 
-        if (version == null || version.getModel() == null) {
-            log.warn(" Product ID {} is missing ModelVersion or Model. Cannot generate specs.", product.getId());
+        // Đã sửa: Di chuyển kiểm tra details == null lên đầu
+        if (details == null) {
+            log.warn("Product ID {} is missing VehicleDetails. Cannot link catalog.", product.getId());
             return;
         }
 
-        if (details == null) {
-            log.warn("Product ID {} is missing VehicleDetails. Cannot link catalog.", product.getId());
+        ModelVersion version = details.getVersion();
+
+        if (version == null || version.getModel() == null) {
+            log.warn("Product ID {} is missing ModelVersion or Model. Cannot generate specs.", product.getId());
             return;
         }
 
@@ -273,15 +286,16 @@ public class StaffService {
         Model model = version.getModel();
         VehicleBrands brand = model.getBrand();
         VehicleCategories type = model.getVehicleType();
+        Short manufactureYear = product.getManufactureYear();
 
         // Validation các trường bắt buộc
         if (type == null) {
-            log.error(" Model ID {} is missing VehicleType. Cannot generate specs.", model.getId());
+            log.error("Model ID {} is missing VehicleType. Cannot generate specs.", model.getId());
             return;
         }
 
         if (brand == null) {
-            log.error(" Model ID {} is missing Brand. Cannot generate specs.", model.getId());
+            log.error("Model ID {} is missing Brand. Cannot generate specs.", model.getId());
             return;
         }
 
@@ -290,21 +304,22 @@ public class StaffService {
         String modelName = model.getName();
         String brandName = brand.getName();
         String versionName = version.getName();
-        Short manufactureYear = product.getManufactureYear();
 
         if (manufactureYear == null) {
             log.warn("Product {} missing manufacture year. Defaulting to current year.", product.getId());
             manufactureYear = (short) LocalDateTime.now().getYear();
         }
 
-        // Kiểm tra VehicleCatalog đã có thông số cho ModelVersion này chưa
+        // *** ĐÃ SỬA: Kiểm tra Catalogue chỉ bằng Model và Year ***
         Optional<VehicleCatalog> existingCatalog = vehicleCatalogRepository
-                .findByVersionIdAndBrandIdAndModelAndYear(versionName, brandName, model, manufactureYear);
+                // Giả định bạn đã tạo phương thức findByModelAndYear trong Repository
+                .findByModelAndYear(model, manufactureYear);
+
 
         if (existingCatalog.isEmpty()) {
             // Catalog chưa tồn tại → Generate mới bằng Gemini
-            log.info("Vehicle spec not found for ModelVersion {}. Generating new specs using Gemini...",
-                    version.getId());
+            log.info("Vehicle spec not found for Model ID {} Year {}. Generating new specs using Gemini...",
+                    model.getId(), manufactureYear);
 
             try {
                 // Gọi Gemini để generate specs DTO
@@ -387,7 +402,12 @@ public class StaffService {
                 log.debug("No completed payment found for productId={}", product.getId());
             }
 
-            return PostVerifyMapper.mapToPostVerifyResponse(product, payment);
+            // FIX LAZY INITIALIZATION EXCEPTION
+            if (product.getImages() != null) {
+                product.getImages().size();
+            }
+
+            return PostVerifyMapper.toResponse(product, payment);
         });
 
         log.info("Listed pending posts successfully: returned {} items (page {} of {})",
@@ -440,7 +460,12 @@ public class StaffService {
                 log.debug("No completed payment found for productId={}", product.getId());
             }
 
-            return PostVerifyMapper.mapToPostVerifyResponse(product, payment);
+            // FIX LAZY INITIALIZATION EXCEPTION
+            if (product.getImages() != null) {
+                product.getImages().size();
+            }
+
+            return PostVerifyMapper.toResponse(product, payment);
         });
 
         log.info("Listed pending posts by type successfully: type={}, returned {} items (page {} of {})",

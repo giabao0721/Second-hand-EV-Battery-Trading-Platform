@@ -73,7 +73,7 @@ public class ProductService implements IProductService {
                     product -> {
                         PostPayment payments = postPaymentRepository
                                 .findFirstByProductIdOrderByCreatedAtDesc(product.getId());
-                        return PostVerifyMapper.mapToPostVerifyResponse(product, payments);
+                        return PostVerifyMapper.toResponse(product, payments);
                     })
                     .toList();
             return PageResponse.of(content, products);
@@ -99,7 +99,7 @@ public class ProductService implements IProductService {
         List<PostVerifyResponse> content = products.getContent().stream().map(
                 product -> {
                     PostPayment payments = postPaymentRepository.findByProductId(product.getId());
-                    return PostVerifyMapper.mapToPostVerifyResponse(product, payments);
+                    return PostVerifyMapper.toResponse(product, payments);
                 })
                 .toList();
         return PageResponse.of(content, products);
