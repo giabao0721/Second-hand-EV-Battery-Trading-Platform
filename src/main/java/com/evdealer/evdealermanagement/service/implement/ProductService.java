@@ -67,7 +67,7 @@ public class ProductService implements IProductService {
             Product.Status statusEnum = validateAndParseStatus(status);
 
             Specification<Product> specification = Specification.where(ProductSpecs.hasStatus(statusEnum));
-            Page<Product> products = productRepository.findAll(specification, pageable);
+            Page<Product> products = productRepository.findByStatusWithImages(statusEnum, pageable);
 
             List<PostVerifyResponse> content = products.getContent().stream().map(
                     product -> {
@@ -89,21 +89,29 @@ public class ProductService implements IProductService {
 
     @Override
     @Transactional(readOnly = true)
-    public PageResponse<PostVerifyResponse> getAllProductsWithStatusAll(Pageable pageable) {
-        pageable = capPageSize(pageable);
-        Specification<Product> spec = Specification.where(ProductSpecs.all());
-        log.info("=== START getAllProductsWithStatusAll==");
-        log.info("spec =  {}", spec);
-        Page<Product> products = productRepository.findAll(spec, pageable);
-        log.info("products =  {}", products);
-        List<PostVerifyResponse> content = products.getContent().stream().map(
-                product -> {
-                    PostPayment payments = postPaymentRepository.findByProductId(product.getId());
-                    return PostVerifyMapper.toResponse(product, payments);
-                })
-                .toList();
-        return PageResponse.of(content, products);
+    public PageResponse<PostVerifyResponse> getAllProductsWithAllStatus(Pageable pageable) {
+        try {
+            log.info("=== START getAllProductsWithAllStatus ===");
+            pageable = capPageSize(pageable);
+
+            Specification<Product> specification = Specification.where(ProductSpecs.all());
+            Page<Product> products = productRepository.findAllWithImages( pageable);
+
+            List<PostVerifyResponse> content = products.getContent().stream()
+                    .map(product -> {
+                        PostPayment payments = postPaymentRepository
+                                .findFirstByProductIdOrderByCreatedAtDesc(product.getId());
+                        return PostVerifyMapper.toResponse(product, payments);
+                    })
+                    .toList();
+
+            return PageResponse.of(content, products);
+        } catch (Exception e) {
+            log.error("FATAL ERROR in getAllProductsWithAllStatus", e);
+            throw new RuntimeException("Failed to get all products: " + e.getMessage(), e);
+        }
     }
+
 
     @Override
     @Transactional(readOnly = true)

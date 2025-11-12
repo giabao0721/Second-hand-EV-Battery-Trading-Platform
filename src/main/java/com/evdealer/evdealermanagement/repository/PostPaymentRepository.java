@@ -13,27 +13,29 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface PostPaymentRepository extends JpaRepository<PostPayment, String> {
-        Optional<PostPayment> findTopByProductIdAndPaymentStatusOrderByIdDesc(
-                        String productId,
-                        PostPayment.PaymentStatus status);
+    Optional<PostPayment> findTopByProductIdAndPaymentStatusOrderByIdDesc(
+            String productId,
+            PostPayment.PaymentStatus status);
 
-        Optional<PostPayment> findFirstByProductIdAndPaymentStatusOrderByCreatedAtDesc(
-                        String productId, PostPayment.PaymentStatus status);
+    Optional<PostPayment> findFirstByProductIdAndPaymentStatusOrderByCreatedAtDesc(
+            String productId, PostPayment.PaymentStatus status);
 
-        boolean existsByAccountIdAndPaymentStatus(String accountId, PostPayment.PaymentStatus status);
+    boolean existsByAccountIdAndPaymentStatus(String accountId, PostPayment.PaymentStatus status);
 
-        Optional<PostPayment> findTopByProductIdAndPaymentStatusOrderByCreatedAtDesc(
-                        String productId,
-                        PostPayment.PaymentStatus paymentStatus);
+    Optional<PostPayment> findTopByProductIdAndPaymentStatusOrderByCreatedAtDesc(
+            String productId,
+            PostPayment.PaymentStatus paymentStatus);
 
-        List<PostPayment> findAllByOrderByCreatedAtDesc();
+    List<PostPayment> findAllByOrderByCreatedAtDesc();
 
-        PostPayment findByProductId(String productId);
+    PostPayment findByProductId(String productId);
 
-        PostPayment findFirstByProductIdOrderByCreatedAtDesc(String productId);
+    PostPayment findFirstByProductIdOrderByCreatedAtDesc(String productId);
 
-        Page<PostPayment> findAllByOrderByCreatedAtDesc(Pageable pageable);
+    Page<PostPayment> findAllByOrderByCreatedAtDesc(Pageable pageable);
 
-        @EntityGraph(attributePaths = {"product", "postPackage"})
-        Page<PostPayment> findByProductSellerIdOrderByCreatedAtDesc(String sellerId, Pageable pageable);
+    @EntityGraph(attributePaths = {"product", "postPackage"})
+    Page<PostPayment> findByProductSellerIdOrderByCreatedAtDesc(String sellerId, Pageable pageable);
+
+    Optional<PostPayment> findTopByProductIdOrderByCreatedAtDesc(String id);
 }

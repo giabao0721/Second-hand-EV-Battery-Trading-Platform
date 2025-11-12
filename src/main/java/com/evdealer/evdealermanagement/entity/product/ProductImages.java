@@ -2,6 +2,7 @@ package com.evdealer.evdealermanagement.entity.product;
 
 import com.evdealer.evdealermanagement.entity.BaseEntity;
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 import net.minidev.json.annotate.JsonIgnore;
@@ -13,6 +14,7 @@ import net.minidev.json.annotate.JsonIgnore;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "product"})
 public class ProductImages extends BaseEntity {
 
     @Column(name = "image_url", nullable = false, length = 500)

@@ -52,6 +52,15 @@ public interface ProductRepository extends JpaRepository<Product, String>, JpaSp
 
   Optional<Product> findById(@NotNull String productId);
 
+  @Query("SELECT DISTINCT p FROM Product p " +
+          "LEFT JOIN FETCH p.images " +
+          "WHERE p.status = :status")
+  Page<Product> findByStatusWithImages(@Param("status") Product.Status status, Pageable pageable);
+
+  @Query("SELECT DISTINCT p FROM Product p " +
+          "LEFT JOIN FETCH p.images")
+  Page<Product> findAllWithImages(Pageable pageable);
+
   List<Product> findByStatus(Product.Status status);
 
   Page<Product> findByStatus(Product.Status status, Pageable pageable);
