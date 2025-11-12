@@ -506,6 +506,29 @@ public class VehicleService {
     }
 
     @Transactional
+    public VehiclePostResponse getVehiclePostById(String productId) {
+        Product product =  productRepository.findById(productId)
+                .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
+
+        VehicleDetails details = vehicleDetailsRepository.findByProductId(productId)
+                .orElseThrow(() -> new AppException(ErrorCode.VEHICLE_NOT_FOUND));
+
+        List<ProductImages> images = productImagesRepository.findByProduct(product);
+        List<ProductImageResponse> imageResponses = images.stream()
+                .map(img -> ProductImageResponse.builder()
+                        .id(img.getId())
+                        .url(img.getImageUrl())
+                        .isPrimary(img.getIsPrimary())
+                        .position(img.getPosition())
+                        .width(img.getWidth())
+                        .height(img.getHeight())
+                        .build())
+                .toList();
+
+        return VehicleMapper.toVehiclePostResponse(product, details, null, imageResponses);
+    }
+
+    @Transactional
     public List<SimilarProductResponse> getSimilarVehicles(String productId) {
 
         VehicleDetails details = vehicleDetailsRepository.findByProductId(productId)

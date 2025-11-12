@@ -9,6 +9,7 @@ import com.evdealer.evdealermanagement.dto.battery.detail.BatteryDetailResponse;
 import com.evdealer.evdealermanagement.dto.battery.type.BatteryTypeResponse;
 import com.evdealer.evdealermanagement.dto.battery.type.CreateBatteryTypeRequest;
 import com.evdealer.evdealermanagement.dto.battery.update.BatteryUpdateProductRequest;
+import com.evdealer.evdealermanagement.dto.post.battery.BatteryPostRequest;
 import com.evdealer.evdealermanagement.dto.post.battery.BatteryPostResponse;
 import com.evdealer.evdealermanagement.dto.post.common.ProductImageResponse;
 import com.evdealer.evdealermanagement.dto.product.similar.SimilarProductResponse;
@@ -323,6 +324,31 @@ public class BatteryService {
         batteryDetailRepository.save(details);
 
         return BatteryDetailsMapper.toBatteryPostResponse(product, details, request, imageDtos);
+    }
+
+    @Transactional
+    public BatteryPostResponse getBatteryPostById(String productId) {
+
+        Product product =  productRepository.findById(productId)
+                .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
+
+        BatteryDetails details = batteryDetailRepository.findByProductsId(productId)
+                .orElseThrow(() -> new AppException(ErrorCode.BATTERY_NOT_FOUND));
+
+        List<ProductImages> images = productImagesRepository.findByProduct(product);
+        List<ProductImageResponse> imageResponses = images.stream()
+                .map(img -> ProductImageResponse.builder()
+                        .id(img.getId())
+                        .url(img.getImageUrl())
+                        .isPrimary(img.getIsPrimary())
+                        .position(img.getPosition())
+                        .width(img.getWidth())
+                        .height(img.getHeight())
+                        .build())
+                .toList();
+
+        return BatteryDetailsMapper.toBatteryPostResponse(product, details, null, imageResponses);
+
     }
 
     @Transactional
