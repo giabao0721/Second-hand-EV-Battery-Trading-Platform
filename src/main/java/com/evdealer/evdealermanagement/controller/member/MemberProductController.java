@@ -155,4 +155,14 @@ public class MemberProductController {
         return ResponseEntity.ok(res);
     }
 
+    @GetMapping("/battery/{productId}")
+    public ResponseEntity<BatteryPostResponse> getBatteryById(@PathVariable String productId) {
+        return ResponseEntity.ok(batteryService.getBatteryPostById(productId));
+    }
+
+    @GetMapping("/vehicle/{productId}")
+    public ResponseEntity<VehiclePostResponse> getVehicleById(@PathVariable String productId) {
+        return ResponseEntity.ok(vehicleService.getVehiclePostById(productId));
+    }
+
 }
