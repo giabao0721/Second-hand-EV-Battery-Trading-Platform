@@ -42,7 +42,7 @@ public class WebSecurityConfigs {
                 "http://localhost:4173",
                 "http://127.0.0.1:5500",
                 "https://eco-green-p80o.onrender.com",
-                "https://eco-green.store/",
+                "https://eco-green.store",
                 "api-eco-green-be.huanops.com", "https://d3k8h5w5waqdh2.cloudfront.net"));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         config.setAllowedHeaders(List.of("*"));
