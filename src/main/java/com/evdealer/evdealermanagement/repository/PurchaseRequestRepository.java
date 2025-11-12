@@ -22,35 +22,19 @@ public interface PurchaseRequestRepository extends JpaRepository<PurchaseRequest
 
     Page<PurchaseRequest> findBySellerId(String sellerId, Pageable pageable);
 
-    Page<PurchaseRequest> findByBuyerIdAndStatus(
-            String buyerId,
-            PurchaseRequest.RequestStatus status,
-            Pageable pageable);
+    Page<PurchaseRequest> findByBuyerIdAndStatus(String buyerId, PurchaseRequest.RequestStatus status, Pageable pageable);
 
-    Page<PurchaseRequest> findBySellerIdAndStatus(
-            String sellerId,
-            PurchaseRequest.RequestStatus status,
-            Pageable pageable);
+    Page<PurchaseRequest> findBySellerIdAndStatus(String sellerId, PurchaseRequest.RequestStatus status, Pageable pageable);
 
-    @Query("SELECT pr FROM PurchaseRequest pr " +
-            "WHERE pr.product.id = :productId " +
-            "AND pr.buyer.id = :buyerId " +
-            "AND pr.status NOT IN ('REJECTED', 'CANCELLED', 'EXPIRED')")
-    Optional<PurchaseRequest> findActivePurchaseRequest(
-            @Param("productId") String productId,
-            @Param("buyerId") String buyerId);
+    @Query("SELECT pr FROM PurchaseRequest pr " + "WHERE pr.product.id = :productId " + "AND pr.buyer.id = :buyerId " + "AND pr.status NOT IN ('REJECTED', 'CANCELLED', 'EXPIRED')")
+    Optional<PurchaseRequest> findActivePurchaseRequest(@Param("productId") String productId, @Param("buyerId") String buyerId);
 
     long countBySellerIdAndStatus(String sellerId, PurchaseRequest.RequestStatus status);
 
-    @Query("SELECT pr FROM PurchaseRequest pr " +
-            "WHERE pr.contractId = :contractId")
+    @Query("SELECT pr FROM PurchaseRequest pr " + "WHERE pr.contractId = :contractId")
     Optional<PurchaseRequest> findByContractId(@Param("contractId") String contractId);
 
-    boolean existsByBuyerIdAndProductIdAndStatusIn(
-            String buyerId,
-            String productId,
-            java.util.List<PurchaseRequest.RequestStatus> statuses
-    );
+    boolean existsByBuyerIdAndProductIdAndStatusIn(String buyerId, String productId, java.util.List<PurchaseRequest.RequestStatus> statuses);
 
     @EntityGraph(attributePaths = {"product"})
     @Query("""
@@ -72,4 +56,15 @@ public interface PurchaseRequestRepository extends JpaRepository<PurchaseRequest
     Page<ContractDocument> findAllByAccountInvolved(String accountId, Pageable pageable);
 
     List<PurchaseRequest> findByContractStatus(PurchaseRequest.ContractStatus status);
+
+
+    @Query("""
+            SELECT pr FROM PurchaseRequest pr
+            JOIN FETCH pr.product p
+            LEFT JOIN FETCH p.images
+            WHERE pr.buyer.id = :buyerId
+              AND pr.contractStatus = 'COMPLETED'
+            """)
+    Page<PurchaseRequest> findCompletedByBuyerId(@Param("buyerId") String buyerId, Pageable pageable);
+
 }
