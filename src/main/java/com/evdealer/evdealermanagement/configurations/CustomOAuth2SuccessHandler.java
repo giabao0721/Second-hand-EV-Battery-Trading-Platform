@@ -36,7 +36,7 @@ public class CustomOAuth2SuccessHandler implements AuthenticationSuccessHandler 
                                         HttpServletResponse response,
                                         Authentication authentication) throws IOException, ServletException {
         // FE mặc định
-        String baseBridgeUrl = frontendUrl + "/oauth2/popup-bridge";
+        String baseBridgeUrl = "http://localhost:8080/oauth2/popup-bridge";
 
         try {
             OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
