@@ -16,9 +16,12 @@ public class PostVerifyMapper {
 
         PostVerifyResponse.PostVerifyResponseBuilder builder = PostVerifyResponse.builder()
                 // Basic info
-                .id(product.getId()).status(product.getStatus()).rejectReason(product.getRejectReason())
-                .title(product.getTitle()).description(product.getDescription()).images(product.getImages())
-                .productType(product.getType()).createdAt(product.getCreatedAt()).updateAt(product.getUpdatedAt())
+                .id(product.getId()).status(product.getStatus())
+                .rejectReason(product.getRejectReason())
+                .title(product.getTitle()).description(product.getDescription())
+                .images(product.getImages())
+                .productType(product.getType()).createdAt(product.getCreatedAt())
+                .updatedAt(product.getUpdatedAt())
 
                 // Price & Location
                 .price(product.getPrice()).city(product.getCity()).district(product.getDistrict())
