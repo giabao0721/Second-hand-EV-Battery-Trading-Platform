@@ -29,7 +29,7 @@ public class StaffProductManagementController {
     @GetMapping("/by-status")
     @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF')")
     public ResponseEntity<PageResponse<PostVerifyResponse>> getAllProductsWithStatus(@RequestParam String status,
-            @PageableDefault(page = 0, size = 12, sort = "updatedAt", direction = Sort.Direction.DESC) Pageable pageable) {
+            @PageableDefault(page = 0, size = 12, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
         try {
             log.info("Request → Get all products by status: {}", status);
             PageResponse<PostVerifyResponse> products = productService.getAllProductsWithStatus(status.toUpperCase(),
@@ -52,7 +52,7 @@ public class StaffProductManagementController {
     @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF')")
     @Transactional(readOnly = true)
     public ResponseEntity<PageResponse<PostVerifyResponse>> getAllProductsWithAllStatus(
-            @PageableDefault(page = 0, size = 12, sort = "updatedAt", direction = Sort.Direction.DESC) Pageable pageable) {
+            @PageableDefault(page = 0, size = 12, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
         try {
             log.info("Request → Get all products");
             PageResponse<PostVerifyResponse> products = productService.getAllProductsWithAllStatus(pageable);

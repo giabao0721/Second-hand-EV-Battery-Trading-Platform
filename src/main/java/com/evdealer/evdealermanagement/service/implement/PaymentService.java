@@ -117,6 +117,7 @@ public class PaymentService {
         product.setStatus(totalPayable.signum() == 0
                 ? Product.Status.PENDING_REVIEW
                 : Product.Status.PENDING_PAYMENT);
+        product.setUpdatedAt(VietNamDatetime.nowVietNam());
         productRepository.save(product);
 
         String paymentUrl = null;
@@ -188,6 +189,7 @@ public class PaymentService {
                     product.setPostingFee(product.getPostingFee().add(payment.getAmount()));
                 }
                 product.setStatus(Product.Status.PENDING_REVIEW);
+                product.setUpdatedAt(VietNamDatetime.nowVietNam());
 
                 log.info("Posting fee updated: {}", product.getPostingFee());
                 log.info("Product status updated: {}", product.getStatus());
@@ -195,6 +197,7 @@ public class PaymentService {
                 log.info("Payment failed - Updating to FAILED");
                 payment.setPaymentStatus(PostPayment.PaymentStatus.FAILED);
                 product.setStatus(Product.Status.PENDING_PAYMENT);
+                product.setUpdatedAt(VietNamDatetime.nowVietNam());
             }
         } else {
             log.warn(" Product is not in PENDING_PAYMENT status: {}", product.getStatus());
@@ -293,12 +296,12 @@ public class PaymentService {
 
         Product product = payment.getProduct();
 
-        if(product.getStatus() != Product.Status.PENDING_PAYMENT) {
+        if (product.getStatus() != Product.Status.PENDING_PAYMENT) {
             log.warn("Product {} is not PENDING_PAYMENT, cannot retry", productId);
             throw new AppException(ErrorCode.PRODUCT_NOT_PENDING_PAYMENT);
         }
 
-        if(payment.getPaymentStatus() == PostPayment.PaymentStatus.COMPLETED) {
+        if (payment.getPaymentStatus() == PostPayment.PaymentStatus.COMPLETED) {
             throw new AppException(ErrorCode.PAYMENT_ALREADY_COMPLETED);
         }
 
@@ -306,24 +309,22 @@ public class PaymentService {
         if (paymentMethod == null) {
             throw new AppException(ErrorCode.PAYMENT_METHOD_MISSING);
         }
-        long amount =  payment.getAmount().setScale(0, RoundingMode.HALF_UP).longValue();
+        long amount = payment.getAmount().setScale(0, RoundingMode.HALF_UP).longValue();
 
         String paymentUrl;
         switch (paymentMethod) {
             case MOMO -> {
                 MomoResponse momoResponse = momoService.createPaymentRequest(
-                        new MomoRequest(payment.getId(), String.valueOf(amount))
-                );
+                        new MomoRequest(payment.getId(), String.valueOf(amount)));
                 paymentUrl = momoResponse.getPayUrl();
                 log.info("New Momo payment URL generated {}", paymentUrl);
             }
             case VNPAY -> {
-                if(amount < 10000) {
+                if (amount < 10000) {
                     throw new AppException(ErrorCode.INVALID_PAYMENT_METHOD);
                 }
                 VnpayResponse vnpayResponse = vnpayService.createPayment(
-                        new VnpayRequest(payment.getId(), String.valueOf(amount))
-                );
+                        new VnpayRequest(payment.getId(), String.valueOf(amount)));
                 paymentUrl = vnpayResponse.getPaymentUrl();
                 log.info("New Vnpay payment URL generated {}", paymentUrl);
             }

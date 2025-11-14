@@ -24,7 +24,7 @@ public class PostVerifyResponse {
     private List<ProductImages> images;
     private Product.ProductType productType;
     private LocalDateTime createdAt;
-    private LocalDateTime updateAt;
+    private LocalDateTime updatedAt;
 
     // ========== Price & Location (Common) ==========
     private BigDecimal price;
