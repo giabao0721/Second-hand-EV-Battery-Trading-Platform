@@ -11,6 +11,7 @@ import com.evdealer.evdealermanagement.exceptions.AppException;
 import com.evdealer.evdealermanagement.exceptions.ErrorCode;
 import com.evdealer.evdealermanagement.mapper.account.AccountMapper;
 import com.evdealer.evdealermanagement.repository.AccountRepository;
+import com.evdealer.evdealermanagement.repository.AuthProviderRepository;
 import com.evdealer.evdealermanagement.repository.ProductRepository;
 import com.evdealer.evdealermanagement.service.contract.IAccountService;
 
@@ -40,6 +41,7 @@ public class ProfileService implements IAccountService {
     private final AccountRepository accountRepository;
     private final Cloudinary cloudinary;
     private final ProductRepository productRepository;
+    private final AuthProviderRepository authProviderRepository;
 
     public AccountProfileResponse getProfile(String username) {
         Account account = accountRepository.findByUsername(username)
@@ -51,12 +53,6 @@ public class ProfileService implements IAccountService {
     public AccountProfileResponse updateProfile(String username, AccountUpdateRequest accountRequest,
             MultipartFile avatarUrl) {
 
-        if(StringUtils.hasText(accountRequest.getEmail())) {
-            if(!Utils.isValidEmail(accountRequest.getEmail())) {
-                throw new AppException(ErrorCode.INVALID_EMAIL);
-            }
-        }
-
         Account existingAccount = accountRepository.findByUsername(username)
                 .orElseThrow(() -> {
                     log.warn("User not found by username='{}'", username);
@@ -64,6 +60,14 @@ public class ProfileService implements IAccountService {
                 });
         log.debug("Loaded account: id={}, email='{}', phone='{}'",
                 existingAccount.getId(), existingAccount.getEmail(), existingAccount.getPhone());
+
+        boolean hasProvider = authProviderRepository.existsByAccountId(accountRequest.getPhone());
+
+        if(!hasProvider && StringUtils.hasText(existingAccount.getPhone())) {
+            if(!accountRequest.getPhone().equals(existingAccount.getPhone())) {
+                throw new AppException(ErrorCode.LOCAL_CANNOT_CHANGE);
+            }
+        }
 
         // Validate phone duplicate - sử dụng StringUtils.hasText
         if (StringUtils.hasText(accountRequest.getPhone())) {
@@ -80,6 +84,12 @@ public class ProfileService implements IAccountService {
             log.debug("No phone provided to update");
         }
 
+        if(StringUtils.hasText(accountRequest.getPhone())) {
+            if(!Utils.validatePhoneNumber(accountRequest.getPhone())) {
+                throw new AppException(ErrorCode.INVALID_PHONE);
+            }
+        }
+
         // Validate email duplicate
         if (StringUtils.hasText(accountRequest.getEmail())) {
             String trimmedEmail = trimToNull(accountRequest.getEmail());
@@ -93,6 +103,12 @@ public class ProfileService implements IAccountService {
             }
         } else {
             log.debug("No email provided to update");
+        }
+
+        if(StringUtils.hasText(accountRequest.getEmail())) {
+            if(!Utils.isValidEmail(accountRequest.getEmail())) {
+                throw new AppException(ErrorCode.INVALID_EMAIL);
+            }
         }
 
         // Map fields từ request sang entity
