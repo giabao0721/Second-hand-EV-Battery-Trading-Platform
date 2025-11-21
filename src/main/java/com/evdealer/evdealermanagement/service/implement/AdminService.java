@@ -63,7 +63,7 @@ public class AdminService {
             Page<Account> accountList = accountRepository.findByRole(role, pageable);
 
             List<Account> sortedList = new ArrayList<>(accountList.getContent());
-            sortedList.sort(Comparator.comparing(Account::getCreatedAt));
+            sortedList.sort(Comparator.comparing(Account::getCreatedAt).reversed());
 
             PageResponse<Account> pageResponse = PageResponse.of(sortedList, accountList);
 
