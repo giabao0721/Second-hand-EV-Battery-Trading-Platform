@@ -113,6 +113,7 @@ public class StaffService {
         product.setFeaturedEndAt(elevatedDays > 0 ? now.plusDays(elevatedDays) : null);
         product.setExpiresAt(now.plusDays(30));
         product.setUpdatedAt(now);
+        product.setCreatedAt(now);
 
         // Thay đổi status và set approver
         product.setStatus(Product.Status.ACTIVE);
