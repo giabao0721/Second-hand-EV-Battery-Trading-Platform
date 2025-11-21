@@ -104,6 +104,7 @@ public class ProductMapper {
                 .modelName(modelName)
                 .version(version)
                 .batteryType(batteryType)
+                .rejectReason(product.getRejectReason())
                 .isHot(product.getIsHot() != null ? product.getIsHot() : false)
                 .build();
     }
