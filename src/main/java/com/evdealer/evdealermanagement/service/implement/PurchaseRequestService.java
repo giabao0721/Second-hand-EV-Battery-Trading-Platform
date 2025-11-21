@@ -177,6 +177,7 @@ public class PurchaseRequestService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "Sản phẩm này đã có yêu cầu mua được chấp nhận hoặc không còn khả dụng.");
         }
+        product.setPrice(request.getOfferedPrice());
         product.setStatus(Product.Status.HIDDEN);
         productRepository.save(product);
 
