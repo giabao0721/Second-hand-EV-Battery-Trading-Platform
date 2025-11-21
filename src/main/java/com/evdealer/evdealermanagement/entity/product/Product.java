@@ -50,7 +50,7 @@ public class Product extends BaseEntity {
     @JoinColumn(name = "seller_id", nullable = false)
     private Account seller;
 
-    @Column(name = "created_at", updatable = false, columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
+    @Column(name = "created_at", columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
     private LocalDateTime createdAt;
 
     @Column(name = "updated_at")
