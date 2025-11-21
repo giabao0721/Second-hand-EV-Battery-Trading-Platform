@@ -5,6 +5,7 @@ import com.evdealer.evdealermanagement.entity.account.Account;
 import com.evdealer.evdealermanagement.entity.notify.Notification;
 import com.evdealer.evdealermanagement.entity.product.Product;
 import com.evdealer.evdealermanagement.entity.transactions.PurchaseRequest;
+import com.evdealer.evdealermanagement.exceptions.AppException;
 import com.evdealer.evdealermanagement.repository.ProductRepository;
 import com.evdealer.evdealermanagement.repository.PurchaseRequestRepository;
 import com.evdealer.evdealermanagement.utils.CurrencyFormatter;
@@ -33,9 +34,6 @@ public class PurchaseRequestService {
     private final EmailService emailService;
     private final NotificationService notificationService;
 
-    // -----------------------------
-    // 1️⃣ Buyer gửi yêu cầu mua
-    // -----------------------------
     @Transactional
     public PurchaseRequestResponse createPurchaseRequest(CreatePurchaseRequestDTO dto) {
         Account buyer = userContextService.getCurrentUser()
@@ -82,7 +80,6 @@ public class PurchaseRequestService {
         PurchaseRequest saved = purchaseRequestRepository.save(request);
 
         try {
-            // ✅ Truyền đúng 5 tham số cho EmailService
             emailService.sendPurchaseRequestNotification(
                     request.getSeller().getEmail(),
                     buyer.getFullName(),
@@ -93,7 +90,6 @@ public class PurchaseRequestService {
             log.warn("Failed to send purchase request email: {}", e.getMessage());
         }
 
-        // Notification cho seller
         try {
             notificationService.createAndPush(
                     request.getSeller().getId(),
@@ -111,9 +107,6 @@ public class PurchaseRequestService {
         return mapToResponse(saved);
     }
 
-    // -----------------------------
-    // 2️⃣ Buyer xem các request
-    // -----------------------------
     @Transactional(readOnly = true)
     public Page<PurchaseRequestResponse> getBuyerRequests(Pageable pageable) {
         Account buyer = userContextService.getCurrentUser()
@@ -123,9 +116,6 @@ public class PurchaseRequestService {
                 .map(this::mapToResponse);
     }
 
-    // -----------------------------
-    // 3️⃣ Seller xem các request
-    // -----------------------------
     @Transactional(readOnly = true)
     public Page<PurchaseRequestResponse> getSellerRequests(Pageable pageable) {
         Account seller = userContextService.getCurrentUser()
@@ -135,9 +125,6 @@ public class PurchaseRequestService {
                 .map(this::mapToResponse);
     }
 
-    // -----------------------------
-    // 5️⃣ Xem chi tiết
-    // -----------------------------
     @Transactional(readOnly = true)
     public PurchaseRequestResponse getRequestDetail(String requestId) {
         PurchaseRequest request = purchaseRequestRepository.findById(requestId)
@@ -145,9 +132,6 @@ public class PurchaseRequestService {
         return mapToResponse(request);
     }
 
-    // -----------------------------
-    // 6️⃣ Seller phản hồi (accept / reject)
-    // -----------------------------
     @Transactional
     public PurchaseRequestResponse respondToPurchaseRequest(SellerResponseDTO dto) {
         Account seller = userContextService.getCurrentUser()
@@ -172,11 +156,14 @@ public class PurchaseRequestService {
     private PurchaseRequestResponse handleAcceptRequest(PurchaseRequest request, String responseMessage) {
         Product product = request.getProduct();
 
-        // Kiểm tra lại product đã bị accept request khác chưa
         if (product.getStatus() != Product.Status.ACTIVE) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "Sản phẩm này đã có yêu cầu mua được chấp nhận hoặc không còn khả dụng.");
         }
+
+        log.info("Updating product {} - Price: {} to {}",
+                product.getId(), product.getPrice(), request.getOfferedPrice());
+
         product.setPrice(request.getOfferedPrice());
         product.setStatus(Product.Status.HIDDEN);
         productRepository.save(product);
@@ -187,49 +174,112 @@ public class PurchaseRequestService {
         request.setContractStatus(PurchaseRequest.ContractStatus.PENDING);
 
         try {
+            log.info("Creating Eversign contract for request {}", request.getId());
+
+            if (request.getBuyer().getEmail() == null || request.getBuyer().getEmail().isBlank()) {
+                throw new IllegalStateException("Buyer email is missing");
+            }
+            if (request.getSeller().getEmail() == null || request.getSeller().getEmail().isBlank()) {
+                throw new IllegalStateException("Seller email is missing");
+            }
+
             ContractInfoDTO contractInfo = eversignService.createBlankContractForManualInput(
                     request.getBuyer(),
                     request.getSeller(),
                     product);
 
-            if (contractInfo != null && contractInfo.getContractId() != null) {
-                request.setContractId(contractInfo.getContractId());
-                request.setContractUrl(contractInfo.getContractUrl());
-                request.setBuyerSignUrl(contractInfo.getBuyerSignUrl());
-                request.setSellerSignUrl(contractInfo.getSellerSignUrl());
-                request.setContractStatus(PurchaseRequest.ContractStatus.SENT);
-                request.setStatus(PurchaseRequest.RequestStatus.CONTRACT_SENT);
-
-                PurchaseRequest saved = purchaseRequestRepository.save(request);
-                eversignService.createAndSaveContractDocument(saved);
-                sendContractEmails(saved, contractInfo);
-
-                // THÊM: Notification cho buyer
-                try {
-                    notificationService.createAndPush(
-                            request.getBuyer().getId(),
-                            "Yêu cầu mua đã được chấp nhận",
-                            String.format("%s đã chấp nhận yêu cầu cho %s. Vui lòng ký hợp đồng điện tử.",
-                                    request.getSeller().getFullName(),
-                                    request.getProduct().getTitle()),
-                            Notification.NotificationType.PURCHASE_REQUEST_ACCEPTED,
-                            request.getId());
-                } catch (Exception e) {
-                    log.warn("Failed to create notification: {}", e.getMessage());
-                }
-
-                return mapToResponse(saved);
-            } else {
-                throw new IllegalStateException("Eversign API returned missing contract info");
+            if (contractInfo == null) {
+                log.error("Eversign returned NULL contractInfo");
+                throw new IllegalStateException("Eversign returned null contract info");
             }
 
-        } catch (Exception e) {
-            log.error("Contract creation failed for request {}: {}", request.getId(), e.getMessage(), e);
+            if (contractInfo.getContractId() == null || contractInfo.getContractId().isBlank()) {
+                log.error("Eversign returned NULL or EMPTY contractId. ContractInfo: {}", contractInfo);
+                throw new IllegalStateException("Eversign returned missing contract ID");
+            }
+
+            log.info("Contract created successfully - ID: {}", contractInfo.getContractId());
+
+            request.setContractId(contractInfo.getContractId());
+            request.setContractUrl(contractInfo.getContractUrl());
+            request.setBuyerSignUrl(contractInfo.getBuyerSignUrl());
+            request.setSellerSignUrl(contractInfo.getSellerSignUrl());
+            request.setContractStatus(PurchaseRequest.ContractStatus.SENT);
+            request.setStatus(PurchaseRequest.RequestStatus.CONTRACT_SENT);
+
+            PurchaseRequest saved = purchaseRequestRepository.save(request);
+            log.info("Request saved with contract info");
+
+            try {
+                eversignService.createAndSaveContractDocument(saved);
+                log.info("ContractDocument saved");
+            } catch (Exception e) {
+                log.error("Failed to save ContractDocument (non-critical): {}", e.getMessage());
+            }
+
+            try {
+                sendContractEmails(saved, contractInfo);
+                log.info("Contract emails sent");
+            } catch (Exception e) {
+                log.warn("Failed to send emails (non-critical): {}", e.getMessage());
+            }
+
+            try {
+                notificationService.createAndPush(
+                        request.getBuyer().getId(),
+                        "Yêu cầu mua đã được chấp nhận",
+                        String.format("%s đã chấp nhận yêu cầu cho %s với giá %s. Vui lòng ký hợp đồng điện tử.",
+                                request.getSeller().getFullName(),
+                                request.getProduct().getTitle(),
+                                CurrencyFormatter.format(request.getOfferedPrice())),
+                        Notification.NotificationType.PURCHASE_REQUEST_ACCEPTED,
+                        request.getId());
+                log.info("Notification sent to buyer");
+            } catch (Exception e) {
+                log.warn("Failed to send notification (non-critical): {}", e.getMessage());
+            }
+
+            log.info("Process completed successfully for request {}", request.getId());
+            return mapToResponse(saved);
+
+        } catch (IllegalStateException e) {
+            log.error("Validation/State error: {}", e.getMessage(), e);
+            rollbackProductStatus(product);
             request.setContractStatus(PurchaseRequest.ContractStatus.FAILED);
             request.setStatus(PurchaseRequest.RequestStatus.CONTRACT_FAILED);
             purchaseRequestRepository.save(request);
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
-                    "Đã chấp nhận yêu cầu nhưng không thể tạo hợp đồng điện tử.");
+                    "Không thể tạo hợp đồng điện tử: " + e.getMessage());
+
+        } catch (AppException e) {
+            log.error("Eversign API error: {} - {}", e.getErrorCode(), e.getMessage(), e);
+            rollbackProductStatus(product);
+            request.setContractStatus(PurchaseRequest.ContractStatus.FAILED);
+            request.setStatus(PurchaseRequest.RequestStatus.CONTRACT_FAILED);
+            purchaseRequestRepository.save(request);
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Lỗi kết nối với dịch vụ hợp đồng điện tử. Vui lòng thử lại sau.");
+
+        } catch (Exception e) {
+            log.error("Unexpected error during contract creation for request {}: {}",
+                    request.getId(), e.getMessage(), e);
+            rollbackProductStatus(product);
+            request.setContractStatus(PurchaseRequest.ContractStatus.FAILED);
+            request.setStatus(PurchaseRequest.RequestStatus.CONTRACT_FAILED);
+            purchaseRequestRepository.save(request);
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Đã chấp nhận yêu cầu nhưng không thể tạo hợp đồng điện tử. Vui lòng liên hệ hỗ trợ.");
+        }
+    }
+
+    private void rollbackProductStatus(Product product) {
+        try {
+            log.warn("Reverting product {} status back to ACTIVE", product.getId());
+            product.setStatus(Product.Status.ACTIVE);
+            productRepository.save(product);
+            log.info("Product status reverted successfully");
+        } catch (Exception e) {
+            log.error("Failed to revert product status: {}", e.getMessage(), e);
         }
     }
 
@@ -268,7 +318,6 @@ public class PurchaseRequestService {
             log.warn("Failed to send rejection email: {}", e.getMessage());
         }
 
-        // Notification cho buyer
         try {
             String reason = (rejectReason == null || rejectReason.isBlank())
                     ? "Không có lý do cụ thể"
