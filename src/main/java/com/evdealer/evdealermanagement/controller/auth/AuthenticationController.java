@@ -9,12 +9,14 @@ import com.evdealer.evdealermanagement.service.implement.AuthService;
 import com.evdealer.evdealermanagement.service.implement.FacebookLoginService;
 import com.evdealer.evdealermanagement.service.implement.JwtService;
 import com.evdealer.evdealermanagement.service.implement.RedisService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.web.bind.annotation.*;
+
 
 @RestController
 @RequiredArgsConstructor
@@ -29,8 +31,8 @@ public class AuthenticationController {
     // ======================= LOGIN =======================
     @PostMapping("/login")
     @ResponseBody
-    public ApiResponse<AccountLoginResponse> login(@RequestBody AccountLoginRequest request) {
-        AccountLoginResponse response = authService.login(request.getPhone(), request.getPassword());
+    public ApiResponse<AccountLoginResponse> login(@RequestBody AccountLoginRequest request, HttpServletRequest servletRequest) {
+        AccountLoginResponse response = authService.login(request.getPhone(), request.getPassword(), request.getRecaptchaToken(), servletRequest);
         return new ApiResponse<>(ErrorCode.SUCCESS.getCode(), ErrorCode.SUCCESS.getMessage(), response);
     }
 

@@ -1,7 +1,11 @@
 package com.evdealer.evdealermanagement.service.contract;
 
+import com.evdealer.evdealermanagement.dto.common.PageResponse;
+import com.evdealer.evdealermanagement.dto.post.verification.PostVerifyResponse;
 import com.evdealer.evdealermanagement.dto.product.detail.ProductDetail;
+import org.springframework.data.domain.Pageable;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -14,8 +18,9 @@ public interface IProductService {
      * Retrieves all available products
      * @return List of all product details, empty list if no products found or error occurs
      */
-    List<ProductDetail> getAllProductsWithStatusActive();
+    PageResponse<PostVerifyResponse> getAllProductsWithStatus(String status, Pageable pageable);
 
+    PageResponse<PostVerifyResponse> getAllProductsWithAllStatus(Pageable pageable);
     /**
      * Retrieves a product by its unique identifier
      * @param id the product ID to search for
@@ -31,7 +36,13 @@ public interface IProductService {
      * @return List of matching product details, empty list if none found
      * @throws IllegalArgumentException if name is null or empty
      */
-    List<ProductDetail> getProductByName(String name);
+    PageResponse<ProductDetail> getProductByName(String name,
+                                                 String city,
+                                                 BigDecimal minPrice,
+                                                 BigDecimal maxPrice,
+                                                 Integer yearFrom,
+                                                 Integer yearTo,
+                                                 Pageable pageable);
 
     /**
      * Retrieves products by their type/category

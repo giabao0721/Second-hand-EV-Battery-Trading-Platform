@@ -21,6 +21,10 @@ public class VehicleDetails {
     @JoinColumn(name = "product_id")
     private Product product;
 
+    @OneToOne
+    @JoinColumn(name = "version_id")
+    private ModelVersion version;
+
     @ManyToOne
     @JoinColumn(name = "category_id", nullable = false)
     private VehicleCategories category;
@@ -29,41 +33,13 @@ public class VehicleDetails {
     @JoinColumn(name = "brand_id")
     private VehicleBrands brand;
 
-    private String model;
-    private Short year;
-    private String color;
+    @ManyToOne
+    @JoinColumn(name = "catalog_id")
+    private VehicleCatalog vehicleCatalog;
 
-    @Column(name = "license_plate")
-    private String licensePlate;
-
-    @Column(name = "owners_count")
-    private Byte ownersCount;
-
-    private String origin;
-
-    @Column(name = "max_speed_kmh")
-    private Short maxSpeedKmh;
-
-    @Column(name = "range_km")
-    private Short rangeKm;
-
-    @Column(name = "charging_time_hours")
-    private Double chargingTimeHours;
-
-    @Column(name = "motor_power_w")
-    private Integer motorPowerW;
-
-    @Column(name = "weight_kg")
-    private Double weightKg;
-
-    @Column(name = "built_in_battery_capacity_ah")
-    private Double builtInBatteryCapacityAh;
-
-    @Column(name = "built_in_battery_voltage_v")
-    private Double builtInBatteryVoltageV;
-
-    @Column(name = "removable_battery")
-    private Boolean removableBattery;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "model_id")
+    private Model model;
 
     @Column(name = "mileage_km")
     private Integer mileageKm;

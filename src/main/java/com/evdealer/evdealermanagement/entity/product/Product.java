@@ -2,13 +2,19 @@ package com.evdealer.evdealermanagement.entity.product;
 
 import com.evdealer.evdealermanagement.entity.BaseEntity;
 import com.evdealer.evdealermanagement.entity.account.Account;
+import com.evdealer.evdealermanagement.entity.battery.BatteryDetails;
+import com.evdealer.evdealermanagement.entity.post.PostPayment;
+import com.evdealer.evdealermanagement.entity.vehicle.VehicleDetails;
+import com.evdealer.evdealermanagement.utils.VietNamDatetime;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Entity
 @Table(name = "products")
@@ -16,7 +22,6 @@ import java.util.List;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@EqualsAndHashCode(callSuper = true)
 @SuperBuilder
 public class Product extends BaseEntity {
 
@@ -26,7 +31,6 @@ public class Product extends BaseEntity {
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    // ENUM('BATTERY','VEHICLE')
     @Enumerated(EnumType.STRING)
     @Column(name = "type", nullable = false, length = 20)
     private ProductType type;
@@ -34,30 +38,24 @@ public class Product extends BaseEntity {
     @Column(precision = 15, scale = 2)
     private BigDecimal price;
 
-    // ENUM('NEW','USED')
     @Enumerated(EnumType.STRING)
     @Column(name = "condition_type", nullable = false, length = 10)
     private ConditionType conditionType;
 
-    // ENUM('ACTIVE','DRAFT','SOLD') theo DB hiện tại
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)
     private Status status;
 
-    // seller_id CHAR(36)
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "seller_id", nullable = false)
     private Account seller;
 
-    // created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    @Column(name = "created_at", updatable = false, columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
+    @Column(name = "created_at", columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
     private LocalDateTime createdAt;
 
-    // updated_at DATETIME(6)
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    // Địa chỉ hiển thị
     @Column(name = "address_detail", columnDefinition = "TEXT")
     private String addressDetail;
 
@@ -77,12 +75,6 @@ public class Product extends BaseEntity {
     @Column(name = "sale_type", length = 20)
     private SaleType saleType;
 
-    @Column(name = "auction_end_time")
-    private LocalDateTime auctionEndTime;
-
-    @Column(name = "is_negotiable", columnDefinition = "BIT")
-    private Boolean isNegotiable;
-
     @Column(name = "posting_fee", precision = 8, scale = 2)
     private BigDecimal postingFee;
 
@@ -92,12 +84,54 @@ public class Product extends BaseEntity {
     @Column(name = "expires_at")
     private LocalDateTime expiresAt;
 
+    @Column(name = "remind_before2_sent")
+    private boolean remindBefore2Sent;
+
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "approved_by")
     private Account approvedBy;
 
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<ProductImages> images;
+
+    @Column(name = "manufacture_year")
+    private Short manufactureYear;
+
+    @Column(name = "featured_end_at")
+    private LocalDateTime featuredEndAt;
+
+    @Column(name = "start_renewal_at")
+    private LocalDateTime startRenewalAt;
+
+    @OneToOne(mappedBy = "product", cascade = CascadeType.ALL)
+    private VehicleDetails vehicleDetails;
+
+    @OneToOne(mappedBy = "product", cascade = CascadeType.ALL)
+    private BatteryDetails batteryDetails;
+
+    @OneToMany(mappedBy = "product", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = false)
+    private Set<PostPayment> postPayments = new HashSet<>();
+
+    @Column(name = "is_hot", nullable = false)
+    @Builder.Default
+    private Boolean isHot = false;
+
+    // ============== EQUALS & HASHCODE - FIX STACKOVERFLOW ==============
+    @Override
+    public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (!(o instanceof Product))
+            return false;
+        Product product = (Product) o;
+        return getId() != null && getId().equals(product.getId());
+    }
+
+    @Override
+    public int hashCode() {
+        return getClass().hashCode();
+    }
+    // ==================================================================
 
     public enum ProductType {
         BATTERY, VEHICLE
@@ -117,9 +151,8 @@ public class Product extends BaseEntity {
 
     @PrePersist
     protected void onCreate() {
-        if(createdAt == null) {
-            createdAt = LocalDateTime.now();
+        if (createdAt == null) {
+            createdAt = VietNamDatetime.nowVietNam();
         }
     }
-
 }

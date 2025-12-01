@@ -19,10 +19,7 @@ public class AccountUpdateRequest {
     @Size(max = 255, message = "Address must not exceed 255 characters")
     private String address;
 
-    @Size(max = 255, message = "Avatar URL must not exceed 255 characters")
-    private String avatarUrl;
-
-    @Pattern(regexp = "^[0-9+()\\-\\s]{6,20}$", message = "Phone number format is invalid")
+    @Pattern(regexp = "^(0|\\+84)[0-9]{9}$", message = "Phone must be 10 digits starting with 0, or +84 followed by 9 digits")
     private String phone;
 
     @Email(message = "Email format is invalid")
@@ -37,8 +34,4 @@ public class AccountUpdateRequest {
 
     @Size(max = 50, message = "Tax code must not exceed 50 characters")
     private String taxCode;
-
-    public enum Gender {
-        MALE, FEMALE, OTHER
-    }
 }

@@ -47,12 +47,25 @@ public class JwtService implements IJwtService {
 
         return Jwts.builder()
                 .setSubject(userDetails.getUsername())
-                .claim("roles", roles) // ✅ thêm claim roles
+                .claim("roles", roles)
                 .setIssuedAt(new Date(System.currentTimeMillis()))
                 .setExpiration(new Date(System.currentTimeMillis() + expirationMs))
                 .signWith(getSignKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
+
+
+    public String generateToken(String accountId, String email, boolean phoneVerified) {
+        return Jwts.builder()
+                .setSubject(accountId)
+                .claim("email", email)
+                .claim("phone_verified", phoneVerified)
+                .setIssuedAt(new Date(System.currentTimeMillis()))
+                .setExpiration(new Date(System.currentTimeMillis() + expirationMs))
+                .signWith(getSignKey(), SignatureAlgorithm.HS256)
+                .compact();
+    }
+
 
 
     @Override

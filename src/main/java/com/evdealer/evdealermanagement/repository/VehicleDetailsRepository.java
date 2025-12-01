@@ -1,12 +1,16 @@
 package com.evdealer.evdealermanagement.repository;
 
+import com.evdealer.evdealermanagement.entity.product.Product;
+import com.evdealer.evdealermanagement.entity.vehicle.VehicleBrands;
 import com.evdealer.evdealermanagement.entity.vehicle.VehicleDetails;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface VehicleDetailsRepository extends JpaRepository<VehicleDetails, String> {
@@ -35,8 +39,8 @@ public interface VehicleDetailsRepository extends JpaRepository<VehicleDetails, 
         List<VehicleDetails> findVehiclesByModel(@Param("model") String model);
 
         // Tìm xe theo năm sản xuất
-        @Query("SELECT vd FROM VehicleDetails vd " +
-                        "WHERE vd.year = :year")
+        @Query("SELECT vc FROM VehicleCatalog vc " +
+                        "WHERE vc.year = :year")
         List<VehicleDetails> findVehiclesByYear(@Param("year") Integer year);
 
         // Tìm xe theo category
@@ -54,18 +58,18 @@ public interface VehicleDetailsRepository extends JpaRepository<VehicleDetails, 
                         @Param("maxPrice") Double maxPrice);
 
         // Tìm xe theo tốc độ tối thiểu
-        @Query("SELECT vd FROM VehicleDetails vd " +
-                        "WHERE vd.maxSpeedKmh >= :minSpeed")
+        @Query("SELECT vc FROM VehicleCatalog vc " +
+                        "WHERE vc.topSpeedKmh >= :minSpeed")
         List<VehicleDetails> findVehiclesByMinSpeed(@Param("minSpeed") Integer minSpeed);
 
         // Tìm xe theo range tối thiểu
-        @Query("SELECT vd FROM VehicleDetails vd " +
-                        "WHERE vd.rangeKm >= :minRange")
+        @Query("SELECT vc FROM VehicleCatalog vc " +
+                        "WHERE vc.rangeKm >= :minRange")
         List<VehicleDetails> findVehiclesByMinRange(@Param("minRange") Integer minRange);
 
         // Tìm xe có pin tháo rời
-        @Query("SELECT vd FROM VehicleDetails vd " +
-                        "WHERE vd.removableBattery = true")
+        @Query("SELECT vc FROM VehicleCatalog vc " +
+                        "WHERE vc.removableBattery = true")
         List<VehicleDetails> findVehiclesWithRemovableBattery();
 
         // Tìm xe theo tình trạng sức khỏe pin
@@ -78,4 +82,45 @@ public interface VehicleDetailsRepository extends JpaRepository<VehicleDetails, 
                         "JOIN vd.brand vb " +
                         "WHERE vb.name IN :brandNames")
         List<VehicleDetails> findByBrandNames(@Param("brandNames") List<String> brandNames);
+
+        // Tìm VehicleDetails theo Product ID
+        @Query("SELECT vd FROM VehicleDetails vd " +
+                        "WHERE vd.product.id = :productId")
+        Optional<VehicleDetails> findByProductId(@Param("productId") String productId);
+
+        // Tìm xe tương tự theo model
+        @Query("SELECT vd.product FROM VehicleDetails vd " +
+                "WHERE vd.model.id = :modelId " +
+                "AND vd.product.id <> :productId " +
+                "AND vd.product.status = 'ACTIVE'" +
+                "ORDER BY vd.product.createdAt DESC")
+        List<Product> findSimilarVehiclesByModel(@Param("modelId") String modelId,
+                                                 @Param("productId") String productId);
+
+        // Tìm xe tương tự theo brand
+        @Query("SELECT vd.product FROM VehicleDetails vd " +
+                "WHERE vd.brand.id = :brandId " +
+                "AND vd.model.id <> :modelId " +
+                "AND vd.product.id <> :productId " +
+                "AND vd.product.status = 'ACTIVE'" +
+                "ORDER BY vd.product.createdAt DESC")
+        List<Product> findSimilarVehiclesByBrand(@Param("brandId") String brandId,
+                                                 @Param("modelId") String modelId,
+                                                 @Param("productId") String productId);
+
+        @Query("""
+            SELECT vd FROM VehicleDetails vd
+            JOIN vd.product p
+            WHERE vd.brand = :brand
+            AND p.price BETWEEN :minPrice AND :maxPrice
+            AND p.status = 'ACTIVE'
+            ORDER BY p.price ASC
+        """)
+        List<VehicleDetails> findByBrandAndPriceBetween(
+                @Param("brand") VehicleBrands brand,
+                @Param("minPrice") BigDecimal minPrice,
+                @Param("maxPrice") BigDecimal maxPrice
+        );
+
+    boolean existsByBrand_Id(String brandId);
 }

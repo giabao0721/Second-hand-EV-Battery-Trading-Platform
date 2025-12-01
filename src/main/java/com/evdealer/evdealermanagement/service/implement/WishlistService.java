@@ -1,7 +1,7 @@
 package com.evdealer.evdealermanagement.service.implement;
 
 import com.evdealer.evdealermanagement.dto.wishlist.WishlistItemResponse;
-import com.evdealer.evdealermanagement.dto.wishlist.WishlistPageResponse;
+import com.evdealer.evdealermanagement.dto.common.PageResponse;
 import com.evdealer.evdealermanagement.entity.account.Account;
 import com.evdealer.evdealermanagement.entity.product.Product;
 import com.evdealer.evdealermanagement.entity.wishlist.Wishlist;
@@ -42,10 +42,6 @@ public class WishlistService implements IWishlistService {
     @Override
     public void addWishlistItem(String accountId, String productId) {
         log.debug("Adding wishlist item for account: {}, product: {}", accountId, productId);
-
-        // Validate UUID format
-        validateUuid(accountId, "accountId");
-        validateUuid(productId, "productId");
 
         // Check if product exists
         if (!productRepository.existsById(productId)) {
@@ -102,7 +98,7 @@ public class WishlistService implements IWishlistService {
 
     @Override
     @Transactional(readOnly = true)
-    public WishlistPageResponse<WishlistItemResponse> listWishlistItem(String accountId, Pageable pageable) {
+    public PageResponse<WishlistItemResponse> listWishlistItem(String accountId, Pageable pageable) {
         log.debug("Listing wishlist items for account: {}, page: {}, size: {}", accountId, pageable.getPageNumber(), pageable.getPageSize());
 
         // Validate UUID format
@@ -110,7 +106,7 @@ public class WishlistService implements IWishlistService {
 
         // Fetch page of wishlist items
         Page<WishlistItem> page = wishlistItemRepository.findByWishlist_Account_Id(accountId, pageable);
-        return WishlistPageResponse.fromPage(page, WishlistMapper::mapToWishlistItemResponse);
+        return PageResponse.fromPage(page, WishlistMapper::mapToWishlistItemResponse);
     }
 
     private void validateUuid(String id, String fieldName) {

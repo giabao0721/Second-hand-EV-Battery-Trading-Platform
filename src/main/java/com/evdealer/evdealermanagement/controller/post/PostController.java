@@ -6,12 +6,9 @@ import com.evdealer.evdealermanagement.dto.post.battery.BatteryPostResponse;
 import com.evdealer.evdealermanagement.dto.post.vehicle.VehiclePostRequest;
 import com.evdealer.evdealermanagement.dto.post.vehicle.VehiclePostResponse;
 import com.evdealer.evdealermanagement.service.implement.PostService;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.validation.Valid;
+import com.evdealer.evdealermanagement.utils.JsonValidationUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -33,10 +30,17 @@ public class PostController {
             @RequestPart("data") String dataJson,
             @RequestPart("images") List<MultipartFile> images,
             @RequestPart(value = "imagesMeta", required = false) String imagesMetaJson,
-            @AuthenticationPrincipal CustomAccountDetails user) throws JsonProcessingException {
+            @AuthenticationPrincipal CustomAccountDetails user) throws Exception {
         String sellerId = user !=  null ? user.getAccountId() : null;
 
-        BatteryPostRequest  request = new ObjectMapper().readValue(dataJson, BatteryPostRequest.class);
+        BatteryPostRequest request = JsonValidationUtils.parseAndValidateJson(
+                dataJson,
+                BatteryPostRequest.class,
+                this,
+                "postBattery",
+                String.class, List.class, String.class, CustomAccountDetails.class
+        );
+
 
         return postService.createBatteryPost(sellerId, request, images, imagesMetaJson);
     }
@@ -46,10 +50,16 @@ public class PostController {
             @RequestPart("data") String dataJson,
             @RequestPart("images") List<MultipartFile> images,
             @RequestPart(value = "imagesMeta", required = false) String imagesMetaJson,
-            @AuthenticationPrincipal CustomAccountDetails user) throws JsonProcessingException {
+            @AuthenticationPrincipal CustomAccountDetails user) throws Exception {
         String sellerId = user !=  null ? user.getAccountId() : null;
 
-        VehiclePostRequest request = new ObjectMapper().readValue(dataJson, VehiclePostRequest.class);
+        VehiclePostRequest request = JsonValidationUtils.parseAndValidateJson(
+                dataJson,
+                VehiclePostRequest.class,
+                this,
+                "postVehicle",
+                String.class, List.class, String.class, CustomAccountDetails.class
+        );
 
         return postService.createVehiclePost(sellerId, request, images, imagesMetaJson);
     }

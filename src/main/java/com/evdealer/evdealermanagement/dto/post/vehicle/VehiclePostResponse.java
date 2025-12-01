@@ -21,56 +21,23 @@ public class VehiclePostResponse {
     String status;
     String title;
     String description;
-    String conditionType;
     BigDecimal price;
-    Boolean isNegotiable;
     String sellerPhone;
     String city;
     String district;
     String ward;
     String addressDetail;
-
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     LocalDateTime createdAt;
-
-    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
-    LocalDateTime updatedAt;
-
-    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
-    LocalDateTime expiresAt;
-
-    // ID references
     String categoryId;
     String brandId;
     String brandName;
     String categoryName;
-
-    // Battery information
-    Double builtInBatteryCapacityAh;
-    Double builtInBatteryVoltageV;
-    Boolean removableBattery;
     Short batteryHealthPercent;
-
-    // Performance
-    Integer motorPowerW;
-    Short maxSpeedKmh;
     Integer mileageKm;
-    Short rangeKm;
-    Double chargingTimeHours;
-
-    // Vehicle info
-    String model;
-    Short year;
-    String color;
-    String origin;
-    Double weightKg;
+    String modelName;
     Byte warrantyMonths;
-    Byte ownersCount;
-
-    // Legal / registration
     Boolean hasInsurance;
     Boolean hasRegistration;
-    String licensePlate;
-
     List<ProductImageResponse> images;
 }

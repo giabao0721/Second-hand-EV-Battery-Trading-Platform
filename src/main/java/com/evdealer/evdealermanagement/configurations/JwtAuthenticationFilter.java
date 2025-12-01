@@ -22,7 +22,6 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -44,8 +43,25 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             "/battery/",
             "/api/vnpayment/return",
             "/api/vnpayment/ipn",
-            "/gemini/suggest-price"
+            "/gemini/suggest-price",
+            "/api/webhooks/eversign/document-complete",
+            "/api/password/",
+            "/profile/public",
+            "/member/product/seller",
+            "/swagger-ui",
+            "/swagger-ui/",
+            "/swagger-ui/index.html",
+            "/swagger-ui/swagger-initializer.js",
+            "/swagger-ui/swagger-ui.css",
+            "/swagger-ui/swagger-ui-bundle.js",
+            "/v3/api-docs",
+            "/v3/api-docs/",
+            "/v3/api-docs/swagger-config",
+            "/public/brands",
+            "/seller-reviews/seller",
+            "/ws-notifications"
     );
+
 
     public JwtAuthenticationFilter(JwtService jwtService, AccountDetailsService userDetailsService, RedisService redisService) {
         this.jwtService = jwtService;
@@ -179,7 +195,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
      * Kiểm tra xem request có phải là public endpoint không
      */
     private boolean isPublicEndpoint(String requestPath) {
-        return PUBLIC_ENDPOINTS.stream()
-                .anyMatch(requestPath::startsWith);
+        return PUBLIC_ENDPOINTS.stream().anyMatch(publicPath ->
+                requestPath.startsWith(publicPath) ||
+                        requestPath.equals(publicPath.replaceAll("/$", "")) // chấp cả khi thiếu dấu '/'
+        );
     }
+
 }
